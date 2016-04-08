@@ -27,13 +27,6 @@ use Magento\Framework\Filesystem;
 use Magento\Framework\Module\Dir;
 
 /**
- * Model is responsible for replacing default vcl template
- * file configuration with user-defined from configuration
- *
- * @author     Magento Core Team <core@magentocommerce.com>
- */
-
-/**
  * Class Config
  *
  */

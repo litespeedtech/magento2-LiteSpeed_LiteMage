@@ -26,6 +26,8 @@ namespace Litespeed\Litemage\Model\App\FrontController;
 use Magento\Framework\App\Response\Http as ResponseHttp;
 
 /**
+ * Class LitemagePlugin
+ *
  * Plugin for processing builtin cache
  */
 class LitemagePlugin

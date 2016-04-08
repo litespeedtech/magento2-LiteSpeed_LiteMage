@@ -25,6 +25,8 @@
 namespace Litespeed\Litemage\Model\App\Response;
 
 /**
+ * Class HttpPurgePlugin
+ * 
  * HTTP response plugin for frontend.
  */
 class HttpPurgePlugin

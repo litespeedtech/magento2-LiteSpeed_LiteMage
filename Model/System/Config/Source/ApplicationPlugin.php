@@ -28,7 +28,7 @@
 namespace Litespeed\Litemage\Model\System\Config\Source;
 
 /**
- * Class Application
+ * Class ApplicationPlugin
  *
  */
 class ApplicationPlugin

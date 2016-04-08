@@ -24,14 +24,7 @@
 namespace Litespeed\Litemage\Model;
 
 /**
- * Model is responsible for replacing default vcl template
- * file configuration with user-defined from configuration
- *
- * @author     Magento Core Team <core@magentocommerce.com>
- */
-
-/**
- * Class Config
+ * Class CacheControl
  *
  */
 class CacheControl

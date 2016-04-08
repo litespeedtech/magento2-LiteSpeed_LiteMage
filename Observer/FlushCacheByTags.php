@@ -25,6 +25,9 @@ namespace Litespeed\Litemage\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 
+/**
+ * Class FlushCacheByTags
+ */
 class FlushCacheByTags implements ObserverInterface
 {
     protected $litemageCache;

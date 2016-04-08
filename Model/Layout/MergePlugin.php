@@ -24,6 +24,9 @@
 
 namespace Litespeed\Litemage\Model\Layout;
 
+/**
+ * Class MergePlugin
+ */
 class MergePlugin
 {
     /**

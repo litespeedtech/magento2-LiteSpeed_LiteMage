@@ -30,6 +30,8 @@
 namespace Litespeed\Litemage\Helper;
 
 /**
+ * Class Data
+ *
  * Helper for LiteMage module
  */
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
