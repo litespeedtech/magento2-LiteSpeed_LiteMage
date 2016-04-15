@@ -50,7 +50,7 @@ class FlushAllCache implements ObserverInterface
     public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache,
             \Magento\Framework\App\Action\Context $context)
     {
-        $this->config = $config;
+        $this->litemageCache = $litemageCache;
         $this->context = $context;
     }
 
@@ -66,7 +66,7 @@ class FlushAllCache implements ObserverInterface
             $this->litemageCache->addPurgeTags('*');
             $this->messageManager = $this->context->getMessageManager();
             $this->messageManager->addSuccess('litemage purge all');
-            $this->helper->debugLog('purge all invoked');
+            $this->litemageCache->debugLog('purge all invoked');
         }
     }
 }
