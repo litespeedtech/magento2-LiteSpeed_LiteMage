@@ -38,53 +38,54 @@ The following steps assume that the Prerequisites mentioned above are met.
 
    Then cd into the Magento 2 root directory.
 2. Set the store to developer mode:
-```
-php bin/magento deploy:mode:set developer
-```
+
+    ```
+    php bin/magento deploy:mode:set developer
+    ```
 3. Download the zip package file from this repository.
 4. Unzip the source package. The unzipped directory should be named magento2-LiteSpeed_LiteMage-master.
 5. In the Magento 2 root directory, run the following command to create the needed directories:
-```
-mkdir -p app/code/LiteSpeed/Litemage
-```
+    ```
+    mkdir -p app/code/LiteSpeed/Litemage
+    ```
 6. Move the contents from the GitHub directory to the newly created directory:
-```
-mv /path/to/magento2-LiteSpeed_LiteMage-master/* app/code/LiteSpeed/Litemage/
-```
+    ```
+    mv /path/to/magento2-LiteSpeed_LiteMage-master/* app/code/LiteSpeed/Litemage/
+    ```
 7. Confirm that the contents' owner is consistent with the other magento store files.
 8. Enable LiteMage 2 in magento:
-```
-php bin/magento module:enable LiteSpeed_Litemage
-```
+    ```
+    php bin/magento module:enable LiteSpeed_Litemage
+    ```
 9. Upgrade the Magento setup:
-```
-php bin/magento setup:upgrade
-```
+    ```
+    php bin/magento setup:upgrade
+    ```
 10. Recompile using the multi-tenant compiler. The single-tenant compiler has some issues. [link](http://devdocs.magento.com/guides/v2.0/config-guide/cli/config-cli-subcommands-compiler.html#config-cli-subcommands-single)
-```
-php bin/magento setup:di:compile-multi-tenant
-```
+    ```
+    php bin/magento setup:di:compile-multi-tenant
+    ```
 11. Once finished, delete `var/di/relations.ser` to work around a Magento bug. [link](https://github.com/magento/magento2/issues/4070)
-```
-rm var/di/relations.ser
-```
+    ```
+    rm var/di/relations.ser
+    ```
 12. If desired, switch back to production mode. The previous step may need to be repeated after the mode switch.
 
 ### Enable LiteMage after installation:
 
 1. In the Magento 2 root directory's .htaccess file, add the following line:
-```
-LiteMage on
-```
+    ```
+    LiteMage on
+    ```
 2. Log into the Magento admin page.
 3. In Store -> Configuration -> Advanced -> System, make sure LiteMage is enabled and the Full Page Cache setting has LiteMage selected.
 4. In System -> Cache Management, refresh configurations and page cache.
 5. Visit and refresh a page that should be cache enabled. Look for the LiteMage related response headers.
 
    Example:
-```
-X-LiteSpeed-Cache: litemage,hit
-```
+    ```
+    X-LiteSpeed-Cache: litemage,hit
+    ```
 
 ## Configuration
 
