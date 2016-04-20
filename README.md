@@ -31,12 +31,7 @@ Run `php -v` afterwards. If the steps were done correctly, the version number sh
 
 The following steps assume that the Prerequisites mentioned above are met.
 
-1. Access a terminal as the Magento owner and cd to the Magento 2 root directory.
-  * Log in as user1
-  * su user1
-  * or Log in as root, su user1
-
-   Then cd into the Magento 2 root directory.
+1. Access a terminal as the Magento directory owner (e.g. "user1") and cd to the Magento 2 root directory. If logged in as root, do `su user1` first.
 2. Set the store to developer mode:
 
     ```
@@ -79,10 +74,12 @@ The following steps assume that the Prerequisites mentioned above are met.
 
 ### Enable LiteMage after installation:
 
-1. In the Magento 2 root directory's .htaccess file, add the following line:
+1. In the Magento 2 root directory's .htaccess file, add the following lines:
 
     ```
+    <IfModule LiteSpeed>
     LiteMage on
+    </IfModule>
     ```
 2. Log into the Magento admin page.
 3. In Store -> Configuration -> Advanced -> System, make sure LiteMage is enabled and the Full Page Cache setting has LiteMage selected.
