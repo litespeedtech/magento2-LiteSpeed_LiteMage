@@ -45,27 +45,33 @@ The following steps assume that the Prerequisites mentioned above are met.
 3. Download the zip package file from this repository.
 4. Unzip the source package. The unzipped directory should be named magento2-LiteSpeed_LiteMage-master.
 5. In the Magento 2 root directory, run the following command to create the needed directories:
+
     ```
     mkdir -p app/code/LiteSpeed/Litemage
     ```
 6. Move the contents from the GitHub directory to the newly created directory:
+
     ```
     mv /path/to/magento2-LiteSpeed_LiteMage-master/* app/code/LiteSpeed/Litemage/
     ```
 7. Confirm that the contents' owner is consistent with the other magento store files.
 8. Enable LiteMage 2 in magento:
+
     ```
     php bin/magento module:enable LiteSpeed_Litemage
     ```
 9. Upgrade the Magento setup:
+
     ```
     php bin/magento setup:upgrade
     ```
 10. Recompile using the multi-tenant compiler. The single-tenant compiler has some issues. [link](http://devdocs.magento.com/guides/v2.0/config-guide/cli/config-cli-subcommands-compiler.html#config-cli-subcommands-single)
+
     ```
     php bin/magento setup:di:compile-multi-tenant
     ```
 11. Once finished, delete `var/di/relations.ser` to work around a Magento bug. [link](https://github.com/magento/magento2/issues/4070)
+
     ```
     rm var/di/relations.ser
     ```
@@ -74,6 +80,7 @@ The following steps assume that the Prerequisites mentioned above are met.
 ### Enable LiteMage after installation:
 
 1. In the Magento 2 root directory's .htaccess file, add the following line:
+
     ```
     LiteMage on
     ```
