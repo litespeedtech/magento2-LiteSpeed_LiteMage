@@ -42,18 +42,18 @@ The following steps assume that the Prerequisites mentioned above are met.
 5. In the Magento 2 root directory, run the following command to create the needed directories:
 
     ```
-    mkdir -p app/code/LiteSpeed/Litemage
+    mkdir -p app/code/Litespeed/Litemage
     ```
 6. Move the contents from the GitHub directory to the newly created directory:
 
     ```
-    mv /path/to/magento2-LiteSpeed_LiteMage-master/* app/code/LiteSpeed/Litemage/
+    mv /path/to/magento2-LiteSpeed_LiteMage-master/* app/code/Litespeed/Litemage/
     ```
 7. Confirm that the contents' owner is consistent with the other magento store files.
 8. Enable LiteMage 2 in magento:
 
     ```
-    php bin/magento module:enable LiteSpeed_Litemage
+    php bin/magento module:enable Litespeed_Litemage
     ```
 9. Upgrade the Magento setup:
 
