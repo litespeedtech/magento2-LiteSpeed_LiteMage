@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -21,19 +21,18 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
 namespace Litespeed\Litemage\Model\App\FrontController;
 
 use Magento\Framework\App\Response\Http as ResponseHttp;
 
 /**
- * Class LitemagePlugin
- *
- * Plugin for processing builtin cache
+ * Plugin for processing litemage cache
  */
 class LitemagePlugin
 {
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
 
@@ -69,8 +68,8 @@ class LitemagePlugin
         \Closure $proceed,
         \Magento\Framework\App\RequestInterface $request
     ) {
-        $this->litemageCache->debugLog('process dispatch action =' . $request->getActionName());
         $response = $proceed($request);
+        $this->litemageCache->debugLog('process dispatch action =' . $request->getActionName());
         if ($this->litemageCache->moduleEnabled() && $response instanceof ResponseHttp) {
             $this->version->process();
         }

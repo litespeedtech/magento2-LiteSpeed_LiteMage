@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -21,7 +21,11 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
+
 namespace Litespeed\Litemage\Model;
+
+use Magento\Framework\View\Layout\Element as Element;
 
 /**
  * Class CacheControl
@@ -35,71 +39,88 @@ class CacheControl
      */
     protected $config;
 
-
     /*
      * Cache related headers only for LiteSpeed Web Server
      */
+
     const LSHEADER_PURGE = 'X-LiteSpeed-Purge';
     const LSHEADER_CACHE_CONTROL = 'X-LiteSpeed-Cache-Control';
     const LSHEADER_CACHE_TAG = 'X-LiteSpeed-Tag';
     const LSHEADER_CACHE_VARY = 'X-LiteSpeed-Vary';
     const ENV_VARYCOOKIE_DEFAULT = '_lscache_vary'; // hardcoded by LSWS
 
-
-    protected $_debug;
-
-    protected $_purgeTags = array();
-
-    protected $_cacheTags = array();
-
-    protected $_isCacheable = -1; // -1: not set
-
+    protected $_debug = false;
+    protected $_purgeTags = [];
+    protected $_cacheTags = [];
+    protected $_isCacheable = -1; // -1: not set, 0: No, 1: true
+    protected $_isEsiRequest = false;
+    protected $_moduleEnabled;
     protected $_hasESI = false;
-
     protected $_ttl = 0;
 
+    /** @var \Magento\Framework\App\Http\Context */
     protected $context;
-
     protected $request;
 
-        /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected $cookieManager;
 
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
+    protected $cookieMetadataFactory;
     protected $helper;
 
     /**
-     * Retrieve url
+     * constructor
      *
-     * @param string $route
-     * @param array $params
-     * @return string
+     * @param \Magento\Framework\App\Http\Context $httpContext,
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+     * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
+     * @param \Magento\Framework\App\Request\Http $request,
+     * @param \Litespeed\Litemage\Model\Config $config,
+     * @param \Litespeed\Litemage\Helper\Data $helper
      */
-
     public function __construct(\Magento\Framework\App\Http\Context $httpContext,
-                                \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
-                                \Magento\Framework\App\Request\Http $request,
-                                \Litespeed\Litemage\Model\Config $config,
-                                \Litespeed\Litemage\Helper\Data $helper
-    ) {
+            \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+            \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
+            \Magento\Framework\App\Request\Http $request,
+            \Litespeed\Litemage\Model\Config $config,
+            \Litespeed\Litemage\Helper\Data $helper
+    )
+    {
         $this->context = $httpContext;
         $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->request = $request;
         $this->config = $config;
         $this->helper = $helper;
-        $this->_debug = $config->debugEnabled();
+        $this->_moduleEnabled = $config->moduleEnabled();
+        if (!$this->_moduleEnabled || !($this->request->isGet() || $this->request->isHead())) {
+            $this->_isCacheable = 0;
+        } else if ($request->isAjax()) {
+            if ($request->getQuery('_')) {
+                $this->_isCacheable = 0;
+            }
+        }
+        if ($this->_moduleEnabled) {
+            $this->_debug = $this->config->debugEnabled();
+        }
     }
 
     public function moduleEnabled()
     {
-        return $this->config->moduleEnabled();
+        return $this->_moduleEnabled;
     }
 
     public function debugLog($message)
     {
-        if ($this->_debug === -1) {
-
+        if ($this->_debug) {
+            $this->helper->debugLog($message);
         }
-        $this->helper->debugLog($message);
+    }
+
+    public function debugEnabled()
+    {
+        return $this->_debug;
     }
 
     public function addPurgeTags($tags)
@@ -107,14 +128,13 @@ class CacheControl
         $this->debugLog("add purge Tags " . print_r($tags, true));
         if (is_array($tags)) {
             $this->_purgeTags = array_merge($this->_purgeTags, $tags);
-        }
-        else if ($tags) {
+        } else if ($tags) {
             $this->_purgeTags[] = $tags;
         }
         $this->_purgeTags = array_unique(($this->_purgeTags));
     }
 
-    public function setCacheable($isCacheable, $ttl=0)
+    public function setCacheable($isCacheable, $ttl = 0)
     {
         // cannot set from non cacheable to cacheable
         if ($isCacheable) {
@@ -128,9 +148,74 @@ class CacheControl
         }
     }
 
+    public function setEsiRequest($isEsiReq = true)
+    {
+        $this->_isEsiRequest = $isEsiReq;
+    }
+
     public function isCacheable()
     {
-        return ($this->_isCacheable == 1);
+        return ($this->_isCacheable === 1);
+    }
+
+    // either unknown or cacheable
+    public function maybeCacheable()
+    {
+        return ($this->_isCacheable !== 0);
+    }
+
+    public function canInjectEsi()
+    {
+        return ($this->_isCacheable === 1 && !$this->_isEsiRequest);
+    }
+
+    public function getEsiUrl($handles, $blockName)
+    {
+        $url = $this->helper->getUrl(
+                'litemage/block/esi',
+                [
+            'b' => $blockName,
+            'h' => $this->encodeEsiHandles($handles)
+                ]
+        );
+
+        return $url;
+    }
+
+    protected function encodeEsiHandles($handles)
+    {
+        $translator = $this->config->getEsiHandlesTranslator();
+        $ignored = $this->config->getEsiHandlesIgnored();
+        $used = [];
+
+        foreach ($handles as $h) {
+            if (isset($translator[$h])) {
+                $used[] = $translator[$h];
+            } else {
+                foreach ($ignored as $i) {
+                    if (strpos($h, $i) !== false) {
+                        break 2;
+                    }
+                }
+                $used[] = $h;
+            }
+        }
+        return implode(',', $used);
+    }
+
+    public function decodeEsiHandles($reqParam)
+    {
+        $translator = $this->config->getEsiHandlesTranslator();
+        $used = explode(',', $reqParam);
+        $handles = [];
+        foreach ($used as $h) {
+            if ($realHandle = array_search($h, $translator)) {
+                $handles[] = $realHandle;
+            } else {
+                $handles[] = $h;
+            }
+        }
+        return $handles;
     }
 
     public function setEsiOn($isOn)
@@ -141,15 +226,14 @@ class CacheControl
     public function setCacheControlHeaders($response)
     {
         $cacheControlHeader = '';
+        $lstags = '';
+        $changed = $this->_checkCacheVary();
 
         $responsecode = $response->getHttpResponseCode();
-        if (( $responsecode == 200 || $responsecode == 404)
-                && ($this->request->isGet() || $this->request->isHead())
-                        && ($this->_isCacheable == 1)
+        if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable == 1)
         ) {
             // cacheable
-            $this->setCacheTags($response);
-            $changed = $this->checkCacheVary();
+            $lstags = $this->_setCacheTagHeader($response);
 
             $cacheControlHeader = 'public,max-age=' . $this->_ttl;
         }
@@ -159,44 +243,35 @@ class CacheControl
             $cacheControlHeader .= 'esi=on';
         }
         if ($cacheControlHeader) {
-            $response->setHeader(self::LSHEADER_CACHE_CONTROL, $cacheControlHeader);
-            $this->debugLog('X-LiteSpeed-CacheControl ' . $cacheControlHeader);
-            $this->debugLog("orginal path " . $this->request->getActionName());
+            $response->setHeader(self::LSHEADER_CACHE_CONTROL,
+                    $cacheControlHeader);
+            $this->debugLog('URI (' . $this->request->getUriString() . ') X-LiteSpeed-CacheControl:' . $cacheControlHeader . ' Tags:' . $lstags);
         }
         if ($cch = $response->getHeader('Cache-Control')) {
-            if (preg_match('/public.*s-maxage=(\d+)/', $cch->getFieldValue(), $matches)) {
+            if (preg_match('/public.*s-maxage=(\d+)/', $cch->getFieldValue(),
+                            $matches)) {
                 $maxAge = $matches[1];
                 $response->setNoCacheHeaders();
-                $this->debugLog('remove cache-control ' . $cch->getFieldValue());
             }
         }
-
     }
 
-    protected function setCacheTags($response)
+    protected function _setCacheTagHeader($response)
     {
         $lstags = '';
-        if (empty($this->_cacheTags)) {
-            $tagsHeader = $response->getHeader('X-Magento-Tags');
-            if ($tagsHeader) {
-                // from esi req
-                $lstags = $tagsHeader->getFieldValue();
+        if (!empty($this->_cacheTags)) {
+            $lstags = $this->_cacheTags;
+            if (is_array($lstags)) {
+                $lstags = implode(',', $this->_cacheTags);
+                $lstags = $this->translateTags($lstags);
             }
-        }
-        else {
-            $lstags = implode(',', $this->_cacheTags);
-
-        }
-
-        if ($lstags) {
-            $cacheTags = $this->translateTags($lstags);
-            $response->setHeader(self::LSHEADER_CACHE_TAG, $cacheTags);
-            $response->setHeader('DEBUG-LiteSpeed-Tag', $cacheTags); //remove
+            $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
             $response->clearHeader('X-Magento-Tags');
         }
+        return $lstags;
     }
 
-    protected function checkCacheVary()
+    protected function _checkCacheVary()
     {
         $varyString = null;
         $data = $this->context->getData();
@@ -209,10 +284,12 @@ class CacheControl
         if ($varyString != $currentVary) {
             if ($varyString) {
                 $sensitiveCookMetadata = $this->cookieMetadataFactory->createSensitiveCookieMetadata()->setPath('/');
-                $this->cookieManager->setSensitiveCookie(self::ENV_VARYCOOKIE_DEFAULT, $varyString, $sensitiveCookMetadata);
+                $this->cookieManager->setSensitiveCookie(self::ENV_VARYCOOKIE_DEFAULT,
+                        $varyString, $sensitiveCookMetadata);
             } else {
                 $cookieMetadata = $this->cookieMetadataFactory->createSensitiveCookieMetadata()->setPath('/');
-                $this->cookieManager->deleteCookie(self::ENV_VARYCOOKIE_DEFAULT, $cookieMetadata);
+                $this->cookieManager->deleteCookie(self::ENV_VARYCOOKIE_DEFAULT,
+                        $cookieMetadata);
             }
             return true;
         }
@@ -224,8 +301,7 @@ class CacheControl
         if (!empty($this->_purgeTags)) {
             if (in_array('*', $this->_purgeTags)) {
                 $purgeTags = '*';
-            }
-            else {
+            } else {
                 $purgeTags = $this->translateTags(implode(',', $this->_purgeTags));
             }
             $response->setHeader(self::LSHEADER_PURGE, $purgeTags);
@@ -236,19 +312,65 @@ class CacheControl
     public function addCacheTags($tags)
     {
         if (is_array($tags)) {
-            $this->_cacheTags = array_unique(array_merge($this->_cacheTags, $tags));
-        }
-        else if ($tags && !in_array($tags, $this->_cacheTags)) {
+            $this->_cacheTags = array_unique(array_merge($this->_cacheTags,
+                            $tags));
+        } else if ($tags && !in_array($tags, $this->_cacheTags)) {
             $this->_cacheTags[] = $tags;
         }
     }
 
+    public function setCacheTags($tags)
+    {
+        $this->_cacheTags = $tags;
+    }
+
     public function translateTags($tagString)
     {
-        $lstags = str_replace(['_block', 'catalog_product_', 'catalog_category_'],
-                ['.B', 'P.', 'C.'], $tagString);
-        $this->debugLog("in translate tags from = $tagString , to = $lstags");
+        $lstags = str_replace(['_block', 'catalog_product_', 'catalog_category_',
+            'catalog_category_product_'], ['.B', 'P.', 'C.', 'C.'], $tagString);
+        // $this->debugLog("in translate tags from = $tagString , to = $lstags");
         return $lstags;
+    }
+
+    public function getElementCacheTags($layout, $elementName)
+    {
+        if (!$layout->hasElement($elementName))
+            return '';
+
+        $tags = [];
+
+        // get all children blocks
+        $blocks = [];
+        $allnames = [$elementName];
+        $etypes = [Element::TYPE_BLOCK, Element::TYPE_CONTAINER, Element::TYPE_UI_COMPONENT];
+
+        while (count($allnames)) {
+            $parent = array_pop($allnames);
+            if ($block = $layout->getBlock($parent)) {
+                $block->setData('litemage_esi', 1);
+                if ($block instanceof \Magento\Framework\DataObject\IdentityInterface) {
+                    // special handling for known blocks
+                    if ($block instanceof \Magento\Theme\Block\Html\Topmenu) {
+                        $tags[] = 'topnav';
+                    } else {
+                        $tags = array_merge($tags, $block->getIdentities());
+                    }
+                    $block->setData('litemage_esi', 2);
+                }
+            }
+            $childNames = $layout->getChildNames($parent);
+            foreach ($childNames as $childName) {
+                $type = $layout->getElementProperty($childName, 'type');
+                if (in_array($type, $etypes)) {
+                    array_push($allnames, $childName);
+                }
+            }
+        }
+        $lstag = $this->translateTags(implode(',', array_unique($tags)));
+        if ($lstag == '') {
+            $lstag = $elementName;
+        }
+        return $lstag;
     }
 
 }

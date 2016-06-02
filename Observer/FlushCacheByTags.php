@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -21,35 +21,30 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
+
 namespace Litespeed\Litemage\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 
-/**
- * Class FlushCacheByTags
- */
 class FlushCacheByTags implements ObserverInterface
 {
-    protected $litemageCache;
 
     /**
-     * Application config object
-     *
      * @var \Litespeed\Litemage\Model\CacheControl
      */
+    protected $litemageCache;
 
     /**
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      */
-    public function __construct(
-            \Litespeed\Litemage\Model\CacheControl $litemageCache)
+    public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache)
     {
         $this->litemageCache = $litemageCache;
     }
 
     /**
-     * If Built-In caching is enabled it collects array of tags
-     * of incoming object and asks to clean cache.
+     * add purge tags
      *
      * @param \Magento\Framework\Event\Observer $observer
      * @return void
@@ -66,4 +61,5 @@ class FlushCacheByTags implements ObserverInterface
             }
         }
     }
+
 }

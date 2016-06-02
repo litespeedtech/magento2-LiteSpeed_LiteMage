@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -21,6 +21,8 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
+
 namespace Litespeed\Litemage\Model\Layout;
 
 /**
@@ -28,21 +30,21 @@ namespace Litespeed\Litemage\Model\Layout;
  */
 class LayoutPlugin
 {
+
     /**
-     * @var \Magento\PageCache\Model\Config
+     * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
 
     /**
      * Constructor
      *
-     * @param \Magento\PageCache\Model\Config $config
+     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      */
     public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache)
     {
         $this->litemageCache = $litemageCache;
     }
-
 
     /**
      * Retrieve all identities from blocks for further cache invalidation
@@ -53,17 +55,14 @@ class LayoutPlugin
      */
     public function afterGetOutput(\Magento\Framework\View\Layout $subject, $result)
     {
-        if ($this->litemageCache->moduleEnabled() && $subject->isCacheable() ) {
+        if ($this->litemageCache->isCacheable()) {
             foreach ($subject->getAllBlocks() as $block) {
-                if ($block instanceof \Magento\Framework\DataObject\IdentityInterface) {
-                    $isEsiBlock = $block->getTtl() > 0;
-                    if ($isEsiBlock) {
-                        continue;
-                    }
+                if (!$block->getData('litemage_esi') && ($block instanceof \Magento\Framework\DataObject\IdentityInterface)) {
                     $this->litemageCache->addCacheTags($block->getIdentities());
                 }
             }
         }
         return $result;
     }
+
 }

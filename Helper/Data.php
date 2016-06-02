@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -23,29 +23,56 @@
  */
 
 /**
- * Page cache data helper
+ * Litemage cache data helper
  *
  */
 
 namespace Litespeed\Litemage\Helper;
 
 /**
- * Class Data
- *
  * Helper for LiteMage module
  */
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
 
+    protected $_debugTag;
+
     public function getUrl($route, array $params = [])
     {
-        return $this->_getUrl($route, $params);
+        $fullurl = $this->_getUrl($route, $params);
+        if ((stripos($fullurl, 'http') !== false) && ($pos = strpos($fullurl, '://'))) {
+            // remove domain part
+            $pos2 = strpos($fullurl, '/', $pos + 4);
+            $fullurl = ($pos2 === false) ? '/' : substr($fullurl, $pos2);
+        }
+        return $fullurl;
     }
 
     public function debugLog($message)
     {
-        $this->_logger->debug('LITEMAGE ' . $message);
+        if ($this->_debugTag == '') {
+            $this->_initDebugTag();
+        }
+        $message = str_replace("\n", ("\n" . $this->_debugTag . '  '), $message);
+        $this->_logger->debug($this->_debugTag . ' ' . $message);
     }
 
+    protected function _initDebugTag()
+    {
+        $this->_debugTag = 'LiteMage ';
+        //$cronUserAgent = \Litespeed\Litemage\Model\Cron::USER_AGENT;
+
+        if ($this->_remoteAddress) {
+            // from server http request
+            $this->_debugTag .= '[';
+            /*if ($this->_httpHeader->getHttpUserAgent() == $cronUserAgent) {
+                $this->_debugTag .= $cronUserAgent . ':';
+            }*/
+            $this->_debugTag .= $_SERVER['REMOTE_ADDR'];
+            $msec = microtime();
+            $msec1 = substr($msec, 2, strpos($msec, ' ') - 2);
+            $this->_debugTag .= ':' . $_SERVER['REMOTE_PORT'] . ':' . $msec1 . ']';
+        }
+    }
 
 }

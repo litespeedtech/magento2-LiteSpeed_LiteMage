@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -22,11 +22,9 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <event name="core_layout_render_element">
-        <observer name="litemage_layout_render" instance="Litespeed\Litemage\Observer\ProcessLayoutRenderElement" />
-    </event>
     <event name="clean_cache_by_tags">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
@@ -66,4 +64,11 @@
     <event name="controller_action_postdispatch_adminhtml_system_currencysymbol_save">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
+    <event name="catalog_category_save_after">
+        <observer name="litemage_purge_events" instance="Litespeed\Litemage\Observer\FlushCacheByEvents" />
+    </event>
+    <event name="catalog_category_delete_after">
+        <observer name="litemage_purge_events" instance="Litespeed\Litemage\Observer\FlushCacheByEvents" />
+    </event>
+    
 </config>

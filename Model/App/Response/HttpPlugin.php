@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -22,30 +22,29 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+
 namespace Litespeed\Litemage\Model\App\Response;
 
 /**
- * Class HttpPlugin
- *
  * HTTP response plugin for frontend.
  */
 class HttpPlugin
 {
 
     /**
-     * @var \Magento\Framework\Registry
+     * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
 
     /**
      * Constructor
      *
-     * @param \Litespeed\Litemage\Model\Config $config
-     * @param \Litespeed\Litemage\Helper\Data $helper
+     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      */
     public function __construct(
-        \Litespeed\Litemage\Model\CacheControl $litemageCache
-    ) {
+    \Litespeed\Litemage\Model\CacheControl $litemageCache
+    )
+    {
         $this->litemageCache = $litemageCache;
     }
 
@@ -57,6 +56,9 @@ class HttpPlugin
      */
     public function beforeSendResponse(\Magento\Framework\App\Response\Http $subject)
     {
+        if ($subject instanceof \Magento\Framework\App\PageCache\NotCacheableInterface) {
+            return;
+        }
         if ($this->litemageCache->moduleEnabled()) {
             $this->litemageCache->setCacheControlHeaders($subject);
         }
@@ -69,7 +71,6 @@ class HttpPlugin
             $this->litemageCache->setCacheable(true, $ttl);
             $this->litemageCache->debugLog("around setpublicheaders $ttl ");
         }
-
     }
 
     //public function renderResult(ResponseInterface $response);

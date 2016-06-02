@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -35,8 +35,5 @@
     </type>
     <type name="\Magento\Framework\App\Response\Http">
         <plugin name="response-http-litemage" type="\Litespeed\Litemage\Model\App\Response\HttpPlugin" sortOrder="10"/>
-    </type>
-    <type name="\Magento\Framework\View\Layout\ProcessorInterface">
-        <plugin name="layout-merge-litemage" type="\Litespeed\Litemage\Model\Layout\MergePlugin" sortOrder="10"/>
     </type>
 </config>

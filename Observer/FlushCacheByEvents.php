@@ -27,7 +27,7 @@ namespace Litespeed\Litemage\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 
-class FlushAllCache implements ObserverInterface
+class FlushCacheByEvents implements ObserverInterface
 {
 
     /**
@@ -36,34 +36,34 @@ class FlushAllCache implements ObserverInterface
     protected $litemageCache;
 
     /**
-     * @var \Magento\Framework\App\Action\Context
-     */
-    protected $context;
-
-    /**
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
-     * @param \Magento\Framework\App\Action\Context $context
      */
-    public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache,
-            \Magento\Framework\App\Action\Context $context)
+    public function __construct(
+    \Litespeed\Litemage\Model\CacheControl $litemageCache)
     {
         $this->litemageCache = $litemageCache;
-        $this->context = $context;
     }
 
     /**
-     * Flush Litemage cache
+     * Event based flush cache
+     *
      * @param \Magento\Framework\Event\Observer $observer
      * @return void
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
         if ($this->litemageCache->moduleEnabled()) {
-            $this->litemageCache->addPurgeTags('*');
-            $this->messageManager = $this->context->getMessageManager();
-            $this->messageManager->addSuccess('litemage purge all');
-            $this->litemageCache->debugLog('purge all invoked');
+            $eventName = $observer->getEventName();
+            $tags = [];
+            switch ($eventName) {
+                case 'catalog_category_save_after':
+                case 'catalog_category_delete_after':
+                    $tags[] = 'topnav';
+                    break;
+            }
+            if (!empty($tags)) {
+                $this->litemageCache->addPurgeTags($tags);
+            }
         }
     }
 

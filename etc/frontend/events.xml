@@ -1,4 +1,5 @@
-<?php
+<?xml version="1.0"?>
+<!--
 /**
  * LiteMage
  *
@@ -21,9 +22,15 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
-\Magento\Framework\Component\ComponentRegistrar::register(
-    \Magento\Framework\Component\ComponentRegistrar::MODULE,
-    'Litespeed_Litemage',
-    __DIR__
-);
+/**
+ * Need to follow same events used for flush varnish
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="core_layout_render_element">
+        <observer name="litemage_layout_render" instance="Litespeed\Litemage\Observer\LayoutRenderElement" />
+    </event>
+    <event name="layout_generate_blocks_after">
+        <observer name="litemage_layout_generator" instance="Litespeed\Litemage\Observer\LayoutGenerateBlocksAfter" />
+    </event>
+</config>

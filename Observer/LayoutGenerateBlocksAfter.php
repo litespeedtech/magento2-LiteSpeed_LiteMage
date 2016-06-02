@@ -27,7 +27,7 @@ namespace Litespeed\Litemage\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 
-class FlushAllCache implements ObserverInterface
+class LayoutGenerateBlocksAfter implements ObserverInterface
 {
 
     /**
@@ -36,34 +36,27 @@ class FlushAllCache implements ObserverInterface
     protected $litemageCache;
 
     /**
-     * @var \Magento\Framework\App\Action\Context
-     */
-    protected $context;
-
-    /**
+     * Class constructor
+     *
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
-     * @param \Magento\Framework\App\Action\Context $context
      */
-    public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache,
-            \Magento\Framework\App\Action\Context $context)
+    public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache)
     {
         $this->litemageCache = $litemageCache;
-        $this->context = $context;
     }
 
     /**
-     * Flush Litemage cache
+     * Check if still cacheable
+     *
      * @param \Magento\Framework\Event\Observer $observer
      * @return void
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if ($this->litemageCache->moduleEnabled()) {
-            $this->litemageCache->addPurgeTags('*');
-            $this->messageManager = $this->context->getMessageManager();
-            $this->messageManager->addSuccess('litemage purge all');
-            $this->litemageCache->debugLog('purge all invoked');
+        if ($this->litemageCache->maybeCacheable()) {
+            $layout = $observer->getEvent()->getLayout();
+            $cacheable_now = $layout->isCacheable(); // only now, as maybe multiple layout
+            $this->litemageCache->setCacheable($cacheable_now);
         }
     }
 

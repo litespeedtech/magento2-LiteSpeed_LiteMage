@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -21,19 +21,20 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
+
 namespace Litespeed\Litemage\Model\Controller\Result;
 
 use Magento\Framework\App\Response\Http as ResponseHttp;
 
 /**
- * Class LitemagePlugin
- *
  * Plugin for processing LiteMage cache
  */
 class LitemagePlugin
 {
+
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
 
@@ -43,22 +44,15 @@ class LitemagePlugin
     protected $version;
 
     /**
-     * @var \Magento\Framework\App\PageCache\Kernel
-     */
-
-
-    /**
      * Constructor
      *
-     * @param \Magento\PageCache\Model\Config $config
-     * @param \Magento\Framework\App\PageCache\Kernel $kernel
-     * @param \Magento\Framework\App\State $state
-     * @param \Magento\Framework\Registry $registry
+     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
+     * @param \Magento\Framework\App\PageCache\Version $version
      */
     public function __construct(
-        \Litespeed\Litemage\Model\CacheControl $litemageCache,
-        \Magento\Framework\App\PageCache\Version $version
-    ) {
+    \Litespeed\Litemage\Model\CacheControl $litemageCache, \Magento\Framework\App\PageCache\Version $version
+    )
+    {
         $this->litemageCache = $litemageCache;
         $this->version = $version;
     }
@@ -71,10 +65,9 @@ class LitemagePlugin
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function aroundRenderResult(
-        \Magento\Framework\Controller\ResultInterface $subject,
-        \Closure $proceed,
-        ResponseHttp $response
-    ) {
+    \Magento\Framework\Controller\ResultInterface $subject, \Closure $proceed, ResponseHttp $response
+    )
+    {
         $proceed($response);
 
         if ($this->litemageCache->moduleEnabled()) {
@@ -82,4 +75,5 @@ class LitemagePlugin
         }
         return $subject;
     }
+
 }

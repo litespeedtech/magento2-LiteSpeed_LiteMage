@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -21,10 +21,18 @@
  * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
+
 namespace Litespeed\Litemage\Model;
 
 use Magento\Framework\Filesystem;
 use Magento\Framework\Module\Dir;
+
+/**
+ * Model is responsible for replacing default vcl template
+ * file configuration with user-defined from configuration
+ *
+ * @author     Magento Core Team <core@magentocommerce.com>
+ */
 
 /**
  * Class Config
@@ -37,23 +45,26 @@ class Config
      */
     const LITEMAGE = 'LITEMAGE';
 
-    /**
-     * XML path to Varnish settings
-     */
-    const XML_PAGECACHE_TTL = 'system/full_page_cache/ttl';
 
-    const XML_PAGECACHE_TYPE = 'system/full_page_cache/caching_application';
+    const CFGXML_DEFAULTLM = 'litemage' ;
+
+	const STOREXML_PUBLICTTL = 'system/full_page_cache/ttl';
+
+    const CFG_DEBUGON = 'debug' ;
+    //const CFG_ADMINIPS = 'admin_ips';
+    const CFG_PUBLICTTL = 'public_ttl';
+    const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
+
+    // config items
+    protected $_conf = array() ;
+    protected $_userModuleEnabled = -2 ; // -2: not set, true, false
+    protected $_esiTag;
+    protected $_isDebug ;
 
     /**
      * @var \Magento\Framework\App\Config\ScopeConfigInterface
      */
     protected $scopeConfig;
-
-
-    /**
-     * @var \Magento\Framework\App\Cache\StateInterface $_cacheState
-     */
-    protected $cacheState;
 
     /**
      * @var Filesystem\Directory\ReadFactory
@@ -84,7 +95,6 @@ class Config
     ) {
         $this->readFactory = $readFactory;
         $this->scopeConfig = $scopeConfig;
-        $this->cacheState = $cacheState;
         $this->reader = $reader;
 
         if (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']) {
@@ -98,6 +108,10 @@ class Config
             // turn off debug for production
             $this->_debug = 0;
         }
+        else {
+            $this->_debug = $this->getConf(self::CFG_DEBUGON);
+        }
+
     }
 
 
@@ -113,9 +127,6 @@ class Config
 
     public function debugEnabled()
     {
-        if ($this->_debug == -1) {
-
-        }
         return $this->_debug;
     }
 
@@ -128,86 +139,85 @@ class Config
      */
     public function getTtl()
     {
-        return $this->scopeConfig->getValue(self::XML_PAGECACHE_TTL);
+        return $this->getConf(self::CFG_PUBLICTTL);
     }
 
-    /**
-     * Return generated varnish.vcl configuration file
-     *
-     * @param string $vclTemplatePath
-     * @return string
-     * @api
-     */
-    public function getVclFile($vclTemplatePath)
+    public function getEsiHandlesTranslator()
     {
-        $moduleEtcPath = $this->reader->getModuleDir(Dir::MODULE_ETC_DIR, 'Magento_PageCache');
-        $configFilePath = $moduleEtcPath . '/' . $this->_scopeConfig->getValue($vclTemplatePath);
-        $directoryRead = $this->readFactory->create($moduleEtcPath);
-        $configFilePath = $directoryRead->getRelativePath($configFilePath);
-        $data = $directoryRead->readFile($configFilePath);
-        return strtr($data, $this->_getReplacements());
+        $translator = [
+            'default' => '-',
+            'catalog_product_view' => 'LPV',
+            'catalog_category_view' => 'LCV',
+            'catalog_category_view_type_layered' => 'LCVTL',
+            'cms_page_view' => 'MPV'
+        ];
+        return $translator;
     }
 
-
-    /**
-     * Get IPs access list that can purge Varnish configuration for config file generation
-     * and transform it to appropriate view
-     *
-     * acl purge{
-     *  "127.0.0.1";
-     *  "127.0.0.2";
-     *
-     * @return mixed|null|string
-     */
-    protected function _getAccessList()
+    public function getEsiHandlesIgnored()
     {
-        $result = '';
-        $tpl = "    \"%s\";";
-        $accessList = $this->_scopeConfig->getValue(
-            self::XML_VARNISH_PAGECACHE_ACCESS_LIST,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
-        );
-        if (!empty($accessList)) {
-            $ips = explode(',', $accessList);
-            foreach ($ips as $ip) {
-                $result[] = sprintf($tpl, trim($ip));
-            }
-            return implode("\n", $result);
-        }
-        return $result;
+        //catalog_product_view_id_1593,catalog_product_view_sku_WS05, catalog_category_view_id_21
+        $ignored = [
+            'catalog_product_view_id_',
+            'catalog_product_view_sku_',
+            'catalog_category_view_id_'
+        ];
+        return $ignored;
     }
 
-    /**
-     * Get regexs for design exceptions
-     * Different browser user-agents may use different themes
-     * Varnish supports regex with internal modifiers only so
-     * we have to convert "/pattern/iU" into "(?Ui)pattern"
-     *
-     * @return string
-     */
-    protected function _getDesignExceptions()
+    public function isAdminIP()
     {
-        $result = '';
-        $tpl = "%s (req.http.user-agent ~ \"%s\") {\n" . "        hash_data(\"%s\");\n" . "    }";
-
-        $expressions = $this->_scopeConfig->getValue(
-            self::XML_VARNISH_PAGECACHE_DESIGN_THEME_REGEX,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
-        );
-        if ($expressions) {
-            $rules = array_values(unserialize($expressions));
-            foreach ($rules as $i => $rule) {
-                if (preg_match('/^[\W]{1}(.*)[\W]{1}(\w+)?$/', $rule['regexp'], $matches)) {
-                    if (!empty($matches[2])) {
-                        $pattern = sprintf("(?%s)%s", $matches[2], $matches[1]);
-                    } else {
-                        $pattern = $matches[1];
-                    }
-                    $if = $i == 0 ? 'if' : ' elsif';
-                    $result .= sprintf($tpl, $if, $pattern, $rule['value']);
-                }
+        if ($adminIps = $this->getConf(self::CFG_ADMINIPS) ) {
+            $remoteAddr = Mage::helper('core/http')->getRemoteAddr() ;
+            if (in_array($remoteAddr, $adminIps)) {
+                return true;
             }
         }
-        return $result;
+        return false;
     }
+
+    public function esiTag($type)
+    {
+        if (isset($this->_esiTag[$type])) {
+            return $this->_esiTag[$type];
+        }
+    }
+
+    public function getConf( $name, $type = '' )
+    {
+        if ( ($type == '' && ! isset($this->_conf[$name])) || ($type != '' && ! isset($this->_conf[$type])) ) {
+            $this->_initConf($type) ;
+        }
+
+        if ( $type == '' )
+            return $this->_conf[$name] ;
+        else if ( $name == '' )
+            return $this->_conf[$type] ;
+        else
+            return $this->_conf[$type][$name] ;
+    }
+
+    protected function _initConf( $type = '' )
+    {
+        $this->_conf = [];
+      //  return;
+        if ( ! isset($this->_conf['defaultlm']) ) {
+            $this->_conf['defaultlm'] = $this->scopeConfig->getValue(self::CFGXML_DEFAULTLM) ;
+        }
+        $pattern = "/[\s,]+/" ;
+
+        switch ( $type ) {
+
+            default:
+                $general = $this->_conf['defaultlm']['general'] ;
+
+                $this->_conf[self::CFG_DEBUGON] = $general[self::CFG_DEBUGON] ;
+                $this->_isDebug = $this->_conf[self::CFG_DEBUGON] ; // required by cron, needs to be set even when module disabled.
+                $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
+
+                $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
+        }
+    }
+
+
 }

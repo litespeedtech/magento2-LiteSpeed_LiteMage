@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -25,14 +25,16 @@
 /**
  * Used in creating options for Caching Application config value selection
  */
+
 namespace Litespeed\Litemage\Model\System\Config\Source;
 
 /**
- * Class ApplicationPlugin
+ * Class Application
  *
  */
 class ApplicationPlugin
 {
+
     /**
      * Options getter
      *
@@ -40,12 +42,11 @@ class ApplicationPlugin
      */
     public function afterToOptionArray(\Magento\PageCache\Model\System\Config\Source\Application $subject, $result)
     {
-        if ( $this->_hasLicense()) {
-            $result[] =
-                [
-                    'value' => \Litespeed\Litemage\Model\Config::LITEMAGE,
-                    'label' => __('LiteMage Cache on LiteSpeed Web Server')
-                ];
+        if ($this->_hasLicense()) {
+            $result[] = [
+                        'value' => \Litespeed\Litemage\Model\Config::LITEMAGE,
+                        'label' => __('LiteMage Cache in LiteSpeed Web Server')
+            ];
         }
         return $result;
     }
@@ -57,8 +58,8 @@ class ApplicationPlugin
      */
     public function afterToArray(Magento\PageCache\Model\System\Config\Source\Application $subject, $result)
     {
-        if ( $this->_hasLicense() ) {
-            $result[\Litespeed\Litemage\Model\Config::LITEMAGE] = __('LiteMage Cache on LiteSpeed Web Server');
+        if ($this->_hasLicense()) {
+            $result[\Litespeed\Litemage\Model\Config::LITEMAGE] = __('LiteMage Cache in LiteSpeed Web Server');
         }
         return $result;
     }
@@ -67,4 +68,5 @@ class ApplicationPlugin
     {
         return (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']);
     }
+
 }

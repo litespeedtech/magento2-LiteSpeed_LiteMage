@@ -1,6 +1,6 @@
 <?php
 /**
- * LiteMage2
+ * LiteMage
  *
  * NOTICE OF LICENSE
  *
@@ -22,25 +22,24 @@
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
+
 namespace Litespeed\Litemage\Model\App\Response;
 
 /**
- * Class HttpPurgePlugin
- * 
- * HTTP response plugin for frontend.
+ * HTTP response plugin for frontend purge.
  */
 class HttpPurgePlugin
 {
 
     /**
-     * @var \Magento\Framework\Registry
+     * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
 
     /**
      * Constructor
      *
-     * @param \Litespeed\Litemage\Helper\Data $helper
+     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      */
     public function __construct(
         \Litespeed\Litemage\Model\CacheControl $litemageCache
