@@ -3,8 +3,8 @@
     "description": "LiteMage Full Page Cache for LiteSpeed Web Server",
     "require": {
         "php": "~5.6.0|~7.0.6",
-        "magento/module-page-cache": "100.0.* - 100.2.*",
-        "magento/framework": "100.0.* - 100.2.*"
+        "magento/module-page-cache": "100.0.*|100.1.*|100.2.*",
+        "magento/framework": "100.0.*|100.1.*|100.2.*"
     },
     "type": "magento2-module",
     "version": "2.0.1",
