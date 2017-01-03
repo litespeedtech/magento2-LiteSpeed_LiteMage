@@ -53,16 +53,20 @@ class FlushCacheByEvents implements ObserverInterface
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
         if ($this->litemageCache->moduleEnabled()) {
-            $eventName = $observer->getEventName();
+			// do not use getEventName() directly, maybe empty
+			$eventName = $observer->getEvent()->getName(); 
             $tags = [];
             switch ($eventName) {
                 case 'catalog_category_save_after':
                 case 'catalog_category_delete_after':
                     $tags[] = 'topnav';
                     break;
+				case 'litemage_purge_all':
+					$tags[] = '*';
+					break;
             }
             if (!empty($tags)) {
-                $this->litemageCache->addPurgeTags($tags);
+                $this->litemageCache->addPurgeTags($tags , "FlushCacheByEvents $eventName");
             }
         }
     }

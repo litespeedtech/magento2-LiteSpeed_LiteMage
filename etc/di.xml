@@ -19,12 +19,12 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <type name="\Magento\Framework\App\Response\Http">
-        <plugin name="response-http-litemage" type="\Litespeed\Litemage\Model\App\Response\HttpPurgePlugin" sortOrder="10"/>
+        <plugin name="response-http-litemage-purge" type="\Litespeed\Litemage\Model\App\Response\HttpPurgePlugin" sortOrder="10"/>
     </type>
 </config>

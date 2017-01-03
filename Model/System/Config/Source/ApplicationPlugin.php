@@ -45,7 +45,7 @@ class ApplicationPlugin
         if ($this->_hasLicense()) {
             $result[] = [
                         'value' => \Litespeed\Litemage\Model\Config::LITEMAGE,
-                        'label' => __('LiteMage Cache in LiteSpeed Web Server')
+                        'label' => __('LiteMage Cache within LiteSpeed Server')
             ];
         }
         return $result;
@@ -66,7 +66,14 @@ class ApplicationPlugin
 
     protected function _hasLicense()
     {
-        return (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']);
+        if (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']) {
+			return true; // for lsws
+		}
+		elseif (isset($_SERVER['HTTP_X_LITEMAGE']) && $_SERVER['HTTP_X_LITEMAGE']) {
+			return true; // for lslb
+		}
+		else
+			return false;
     }
 
 }

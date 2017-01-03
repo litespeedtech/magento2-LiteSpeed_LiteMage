@@ -60,10 +60,10 @@ The following steps assume that the Prerequisites mentioned above are met.
     ```
     php bin/magento setup:upgrade
     ```
-10. Recompile using the multi-tenant compiler. The single-tenant compiler has some issues. [link](http://devdocs.magento.com/guides/v2.0/config-guide/cli/config-cli-subcommands-compiler.html#config-cli-subcommands-single)
+10. Recompile code 
 
     ```
-    php bin/magento setup:di:compile-multi-tenant
+    php bin/magento setup:di:compile
     ```
 11. Once finished, delete `var/di/relations.ser` to work around a Magento bug. [link](https://github.com/magento/magento2/issues/4070)
 

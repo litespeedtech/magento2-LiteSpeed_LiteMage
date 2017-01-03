@@ -28,13 +28,6 @@ use Magento\Framework\Filesystem;
 use Magento\Framework\Module\Dir;
 
 /**
- * Model is responsible for replacing default vcl template
- * file configuration with user-defined from configuration
- *
- * @author     Magento Core Team <core@magentocommerce.com>
- */
-
-/**
  * Class Config
  *
  */
@@ -77,7 +70,13 @@ class Config
     protected $reader;
     protected $_debug = -1; // avail value: -1(not set), true, false
 
-    protected $_moduleEnabled = false;
+	/**
+	 * @var int moduleStatus bitmask
+	 *	 1: SERVER variable set
+	 *	 2: FPC enabled
+	 *   4: FPC type is LITEMAGE
+	 */
+	protected $_moduleStatus = 0; 
 
     /**
      * @param Filesystem\Directory\ReadFactory $readFactory
@@ -88,7 +87,6 @@ class Config
     public function __construct(
         \Magento\Framework\Filesystem\Directory\ReadFactory $readFactory,
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\Framework\App\Cache\StateInterface $cacheState,
         \Magento\PageCache\Model\Config $pagecacheConfig,
         \Magento\Framework\Module\Dir\Reader $reader,
         \Magento\Framework\App\State $state
@@ -96,14 +94,17 @@ class Config
         $this->readFactory = $readFactory;
         $this->scopeConfig = $scopeConfig;
         $this->reader = $reader;
+		
+		if (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']) {
+			$this->_moduleStatus |= 1;
+		}
+        if ($pagecacheConfig->isEnabled()) {
+			$this->_moduleStatus |= 2;
+		}
+        if ($pagecacheConfig->getType() == self::LITEMAGE) {
+			$this->_moduleStatus |= 4;
+        }		
 
-        if (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']) {
-            if ($pagecacheConfig->isEnabled()
-                    && $pagecacheConfig->getType() == self::LITEMAGE
-                    && $cacheState->isEnabled(\Magento\PageCache\Model\Cache\Type::TYPE_IDENTIFIER)) {
-                $this->_moduleEnabled = true;
-            }
-        }
         if ($state->getMode() === \Magento\Framework\App\State::MODE_PRODUCTION) {
             // turn off debug for production
             $this->_debug = 0;
@@ -122,9 +123,14 @@ class Config
      */
     public function moduleEnabled()
     {
-        return $this->_moduleEnabled;
+        return ($this->_moduleStatus == 7);
     }
 
+    public function cliModuleEnabled()
+    {
+        return ($this->_moduleStatus == 6);
+    }
+	
     public function debugEnabled()
     {
         return $this->_debug;

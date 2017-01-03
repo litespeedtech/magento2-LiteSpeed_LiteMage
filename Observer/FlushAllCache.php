@@ -29,42 +29,40 @@ use Magento\Framework\Event\ObserverInterface;
 
 class FlushAllCache implements ObserverInterface
 {
+	protected $config;
+	
+    /** @var \Magento\Framework\Event\ManagerInterface */
+    protected $eventManager;
+	
 
     /**
-     * @var \Litespeed\Litemage\Model\CacheControl
+     * @param \Litespeed\Litemage\Model\Config $config,
+	 * @param \Magento\Framework\Event\ManagerInterface $eventManager,
      */
-    protected $litemageCache;
-
-    /**
-     * @var \Magento\Framework\App\Action\Context
-     */
-    protected $context;
-
-    /**
-     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
-     * @param \Magento\Framework\App\Action\Context $context
-     */
-    public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache,
-            \Magento\Framework\App\Action\Context $context)
+    public function __construct(\Litespeed\Litemage\Model\Config $config,
+			\Magento\Framework\Event\ManagerInterface $eventManager)
     {
-        $this->litemageCache = $litemageCache;
-        $this->context = $context;
+        $this->config = $config;
+		$this->eventManager = $eventManager;
     }
 
     /**
-     * Flush Litemage cache
+     * Flush All Litemage cache
      * @param \Magento\Framework\Event\Observer $observer
      * @return void
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if ($this->litemageCache->moduleEnabled()) {
-            $this->litemageCache->addPurgeTags('*');
-            $this->messageManager = $this->context->getMessageManager();
-            $this->messageManager->addSuccess('litemage purge all');
-            $this->litemageCache->debugLog('purge all invoked');
+		if (PHP_SAPI == 'cli') {
+			// from command line
+			if ($this->config->cliModuleEnabled())
+				$this->eventManager->dispatch('litemage_cli_purge_all');
+		}
+		else if ($this->config->moduleEnabled()) {
+			$this->eventManager->dispatch('litemage_purge_all');
         }
     }
+	
 
 }

@@ -25,34 +25,24 @@
 
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <event name="clean_cache_by_tags">
-        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
-    </event>
-    <event name="clean_media_cache_after">
-        <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
-    </event>
-    <event name="clean_catalog_images_cache_after">
-        <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
-    </event>
-    <event name="assigned_theme_changed">
-        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
-    </event>
-    <event name="catalogrule_after_apply">
-        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
-    </event>
+    <!-- flush all -->
     <event name="adminhtml_cache_flush_system">
         <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
     </event>
     <event name="adminhtml_cache_flush_all">
         <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
     </event>
-    <event name="assign_theme_to_stores_after">
+    <event name="adminhtml_cache_refresh_type">
         <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
     </event>
-    <event name="controller_action_postdispatch_adminhtml_system_currency_saveRates">
+    <!-- flush by tags -->
+    <event name="clean_cache_by_tags">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
-    <event name="controller_action_postdispatch_adminhtml_system_config_save">
+    <event name="assigned_theme_changed">
+        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
+    </event>
+    <event name="catalogrule_after_apply">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
     <event name="controller_action_postdispatch_adminhtml_catalog_product_action_attribute_save">
@@ -61,14 +51,17 @@
     <event name="controller_action_postdispatch_adminhtml_catalog_product_massStatus">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
-    <event name="controller_action_postdispatch_adminhtml_system_currencysymbol_save">
-        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
-    </event>
     <event name="catalog_category_save_after">
         <observer name="litemage_purge_events" instance="Litespeed\Litemage\Observer\FlushCacheByEvents" />
     </event>
     <event name="catalog_category_delete_after">
         <observer name="litemage_purge_events" instance="Litespeed\Litemage\Observer\FlushCacheByEvents" />
+    </event>
+    <event name="litemage_cli_purge_all">
+        <observer name="litemage_cli_purge_all" instance="Litespeed\Litemage\Observer\FlushCacheByCli"/>
+    </event>
+    <event name="litemage_purge_all">
+        <observer name="litemage_purge_all_internal" instance="Litespeed\Litemage\Observer\FlushCacheByEvents"/>
     </event>
     
 </config>

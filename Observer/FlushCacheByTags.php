@@ -56,10 +56,11 @@ class FlushCacheByTags implements ObserverInterface
             if ($object instanceof \Magento\Framework\DataObject\IdentityInterface) {
                 $tags = $object->getIdentities();
                 if (!empty($tags)) {
-                    $this->litemageCache->addPurgeTags($tags);
+                    $this->litemageCache->addPurgeTags($tags, 'FlushCacheByTags-' . $observer->getEvent()->getName());
                 }
             }
         }
+	
     }
 
 }

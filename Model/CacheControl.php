@@ -59,8 +59,9 @@ class CacheControl
     protected $_ttl = 0;
 
     /** @var \Magento\Framework\App\Http\Context */
-    protected $context;
+    protected $httpContext;
     protected $request;
+	protected $context;
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected $cookieManager;
@@ -76,6 +77,7 @@ class CacheControl
      * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
      * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
      * @param \Magento\Framework\App\Request\Http $request,
+	 * @param \Magento\Framework\App\Action\Context $context,
      * @param \Litespeed\Litemage\Model\Config $config,
      * @param \Litespeed\Litemage\Helper\Data $helper
      */
@@ -83,14 +85,16 @@ class CacheControl
             \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
             \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
             \Magento\Framework\App\Request\Http $request,
+			\Magento\Framework\App\Action\Context $context,
             \Litespeed\Litemage\Model\Config $config,
             \Litespeed\Litemage\Helper\Data $helper
     )
     {
-        $this->context = $httpContext;
+        $this->httpContext = $httpContext;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->request = $request;
+		$this->context = $context;
         $this->config = $config;
         $this->helper = $helper;
         $this->_moduleEnabled = $config->moduleEnabled();
@@ -123,15 +127,22 @@ class CacheControl
         return $this->_debug;
     }
 
-    public function addPurgeTags($tags)
+	/**
+	 * Add purgeable tags
+	 * @param array $tags
+	 * @param string $source
+	 * 
+	 */
+    public function addPurgeTags($tags, $source)
     {
-        $this->debugLog("add purge Tags " . print_r($tags, true));
-        if (is_array($tags)) {
-            $this->_purgeTags = array_merge($this->_purgeTags, $tags);
-        } else if ($tags) {
-            $this->_purgeTags[] = $tags;
-        }
-        $this->_purgeTags = array_unique(($this->_purgeTags));
+		if (!empty($tags)) {
+			$this->_purgeTags = array_unique(array_merge($this->_purgeTags, $tags));
+		}
+		if ($this->_debug) {
+			$this->debugLog('add purge tags from ' 
+					. $source . ' : ' . implode(',', $tags) 
+					. ' Result=' . implode(',',$this->_purgeTags) );
+		}
     }
 
     public function setCacheable($isCacheable, $ttl = 0)
@@ -274,7 +285,7 @@ class CacheControl
     protected function _checkCacheVary()
     {
         $varyString = null;
-        $data = $this->context->getData();
+        $data = $this->httpContext->getData();
         if (!empty($data)) {
             ksort($data);
             $varyString = sha1(serialize($data));
@@ -305,7 +316,14 @@ class CacheControl
                 $purgeTags = $this->translateTags(implode(',', $this->_purgeTags));
             }
             $response->setHeader(self::LSHEADER_PURGE, $purgeTags);
-            $this->debugLog('set purge header ' . $purgeTags);
+			$om = $this->context->getObjectManager();
+			$state = $om->get('Magento\Framework\App\State');
+			if ($state->getAreaCode() === \Magento\Framework\App\Area::AREA_ADMINHTML) {
+				// if in adminhtml, show the message
+				$this->context->getMessageManager()->addSuccessMessage('Informed LiteSpeed Web Server to purge ' . $purgeTags);
+			}
+			
+            $this->debugLog('Set purge header ' . $purgeTags);
         }
     }
 

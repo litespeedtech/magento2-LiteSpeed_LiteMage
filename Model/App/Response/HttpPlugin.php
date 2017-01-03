@@ -59,7 +59,7 @@ class HttpPlugin
         if ($subject instanceof \Magento\Framework\App\PageCache\NotCacheableInterface) {
             return;
         }
-        if ($this->litemageCache->moduleEnabled()) {
+		if ($this->litemageCache->moduleEnabled()) {
             $this->litemageCache->setCacheControlHeaders($subject);
         }
     }
