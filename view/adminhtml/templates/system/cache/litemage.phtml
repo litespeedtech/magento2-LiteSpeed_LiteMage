@@ -1,0 +1,93 @@
+<?php
+/**
+ * LiteMage
+ *
+ * NOTICE OF LICENSE
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
+ *
+ * @package   LiteSpeed_LiteMage
+ * @copyright  Copyright (c) 2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
+ */
+?>
+
+<?php
+if ($block->canShowButton()):
+?>
+<br>
+<div class="additional-cache-management">
+    <h2>
+        <span><?php /* @escapeNotVerified */ echo __('LiteMage Cache Management (LiteSpeed Web Server)') ?></span>
+    </h2>
+</div>
+<?php 
+
+
+if ($stats = $block->getCacheStatistics()) :
+	?>
+
+<div><table class="data-grid">
+    <tr>
+		<th class="data-grid-th" width="25%"><?php echo __('Current LiteMage Plan');?></th>
+		<th class="data-grid-th" width="25%"><?php echo __('Public Cache Hits'); ?></th>
+		<th class="data-grid-th" width="25%"><?php echo __('Full Page Hits'); ?></th>
+		<th class="data-grid-th" width="25%"><?php echo __('LiteMage Cached Objects'); ?></th>
+	</tr>
+	<?php 
+		$severity = $stats['LITEMAGE_LIMITED'] > 0 ? 'grid-severity-critical' : 'grid-severity-notice';
+		$noteclass = 'notifications-entry-description';
+		echo '<tr><td><div class="' . $severity . '">' . $stats['plan'] 
+				. '</div></td><td>' . $stats['PUB_HITS']
+				. '<div class="' . $noteclass . '">' . __('Number of requests that hit public cache since last flush all') 
+				. '</div></td><td>' . $stats['FULLPAGE_HITS']
+				. '<div class="' . $noteclass . '">'  . __('Number of requests fully served from cache (no PHP invoked) since last flush all')
+				. '</div></td><td>' . $stats['LITEMAGE_OBJS']
+				. '<div class="' . $noteclass . '">'  . __('Current publicly cached object count')
+				. "</div></td></tr>\n";
+	?>
+    <tr>
+		<th class="data-grid-th"><?php echo __('Available Plan Options');?>
+		</th>
+		<th class="data-grid-th"><?php echo __('Private Cache Hits'); ?></th>
+		<th class="data-grid-th"><?php echo __('Partial Page Hits'); ?></th>
+		<th class="data-grid-th"><?php echo __('Not Cached (Limited by Plan)'); ?></th>
+	</tr>
+	<?php 
+		echo '<tr><td>' . __('LiteMage Starter') 
+				. '<div class="' . $noteclass . '">' . __('1,500 publicly cached objects') 
+				. '</div>' . __('LiteMage Standard')
+				. '<div class="' . $noteclass . '">' . __('25,000 publicly cached objects') 
+				. '</div>' . __('LiteMage Unlimited')
+				. '<div class="' . $noteclass . '">' . __('unlimited publicly cached objects')
+				. '</div></td><td>'. $stats['PVT_HITS']
+				. '<div class="' . $noteclass . '">' . __('Number of requests that hit private cache since last flush all') 
+				. '</div></td><td>'. $stats['PARTIAL_HITS']
+				. '<div class="' . $noteclass . '">' . __('Number of requests partially served from cache (some data retrieved from Magento) since last flush all') 
+				. '</div></td><td><div class="' . $severity . '">' . $stats['LITEMAGE_LIMITED']
+				. '</div><div class="' . $noteclass . '">' . __('Number of requests not served from cache due to plan limitation. You can upgrade your LiteMage plan if this value is not zero.')
+				. "</div></td></tr>\n";
+	?>
+	</table>
+	</div>
+<?php
+endif;
+?>
+
+<?php
+
+endif;
+
+?>
+

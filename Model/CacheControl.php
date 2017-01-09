@@ -35,7 +35,7 @@ class CacheControl
 {
 
     /**
-     * @var \Magento\Framework\Module\Dir\Reader
+     * @var \Litespeed\Litemage\Model\Config
      */
     protected $config;
 
