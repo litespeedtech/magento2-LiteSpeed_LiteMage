@@ -97,7 +97,7 @@ class FlushCacheByCli implements ObserverInterface
 		$client->setMethod(\Zend_Http_Client::POST);
 		$client->setParameterPost('all', 1);
 		
-		$server_ip = '127.0.0.1' ; //$helper->getConf($helper::CFG_WARMUP_SERVER_IP, $helper::CFG_WARMUP);
+		$server_ip = false; //in future, allow this configurable.
 		$base = $this->url->getBaseUrl();
 		if ($server_ip) {
 			$pattern = "/:\/\/([^\/^:]+)(\/|:)?/";
