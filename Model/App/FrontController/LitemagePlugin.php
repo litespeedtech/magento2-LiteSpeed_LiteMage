@@ -69,7 +69,7 @@ class LitemagePlugin
         \Magento\Framework\App\RequestInterface $request
     ) {
         $response = $proceed($request);
-        $this->litemageCache->debugLog('process dispatch action =' . $request->getActionName());
+        $this->litemageCache->debugLog('process dispatch action=' . $request->getActionName());
         if ($this->litemageCache->moduleEnabled() && $response instanceof ResponseHttp) {
             $this->version->process();
         }

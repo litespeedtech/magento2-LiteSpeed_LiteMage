@@ -126,6 +126,11 @@ class CacheControl
     {
         return $this->_debug;
     }
+	
+	public function needPurge()
+	{
+		return ($this->_moduleEnabled && !empty($this->_purgeTags));
+	}
 
 	/**
 	 * Add purgeable tags

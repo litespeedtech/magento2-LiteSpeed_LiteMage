@@ -27,4 +27,7 @@
     <type name="Magento\PageCache\Model\System\Config\Source\Application">
         <plugin name="pagecache-system-source-litemage" type="Litespeed\Litemage\Model\System\Config\Source\ApplicationPlugin" sortOrder="1"/>
     </type>
+    <type name="\Magento\Framework\App\Response\Http">
+        <plugin name="response-http-litemage-purge" type="\Litespeed\Litemage\Model\App\Response\HttpPurgePlugin" sortOrder="10"/>
+    </type>
 </config>

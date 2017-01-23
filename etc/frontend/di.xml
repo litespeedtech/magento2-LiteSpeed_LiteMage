@@ -34,6 +34,7 @@
         <plugin name="view-layout-litemage" type="\Litespeed\Litemage\Model\Layout\LayoutPlugin"/>
     </type>
     <type name="\Magento\Framework\App\Response\Http">
-        <plugin name="response-http-litemage" type="\Litespeed\Litemage\Model\App\Response\HttpPlugin" sortOrder="10"/>
+        <plugin name="response-http-litemage-purge" type="\Litespeed\Litemage\Model\App\Response\HttpPurgePlugin" sortOrder="10"/>
+        <plugin name="response-http-litemage" type="\Litespeed\Litemage\Model\App\Response\HttpPlugin" sortOrder="20"/>
     </type>
 </config>
