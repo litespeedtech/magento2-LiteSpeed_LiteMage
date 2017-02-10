@@ -116,21 +116,21 @@ class Config
     }
 
 
-        /**
+    /**
      * Check if LiteMage module is enabled based on LiteSpeed license and config
      *
      * @return bool
      */
     public function moduleEnabled()
     {
-        return ($this->_moduleStatus == 7);
+		if (PHP_SAPI == 'cli') {
+			return ($this->_moduleStatus == 6);
+		}
+		else {
+			return ($this->_moduleStatus == 7);
+		}
     }
 
-    public function cliModuleEnabled()
-    {
-        return ($this->_moduleStatus == 6);
-    }
-	
     public function debugEnabled()
     {
         return $this->_debug;

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -52,23 +52,25 @@ class FlushCacheByEvents implements ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if ($this->litemageCache->moduleEnabled()) {
-			// do not use getEventName() directly, maybe empty
-			$eventName = $observer->getEvent()->getName(); 
-            $tags = [];
-            switch ($eventName) {
-                case 'catalog_category_save_after':
-                case 'catalog_category_delete_after':
-                    $tags[] = 'topnav';
-                    break;
-				case 'litemage_purge_all':
-					$tags[] = '*';
-					break;
-            }
-            if (!empty($tags)) {
-                $this->litemageCache->addPurgeTags($tags , "FlushCacheByEvents $eventName");
-            }
-        }
+		if (!$this->litemageCache->moduleEnabled())
+			return;
+		
+		$event = $observer->getEvent();
+		// do not use getEventName() directly, maybe empty
+		$eventName = $event->getName(); 
+		$tags = [];
+		switch ($eventName) {
+			case 'catalog_category_save_after':
+			case 'catalog_category_delete_after':
+				$tags[] = 'topnav';
+				break;
+			case 'litemage_purge':
+				$tags = $event->getTags();
+				break;
+		}
+		if (!empty($tags)) {
+			$this->litemageCache->addPurgeTags($tags , "FlushCacheByEvents $eventName");
+		}
     }
 
 }

@@ -276,10 +276,9 @@ class CacheControl
     {
         $lstags = '';
         if (!empty($this->_cacheTags)) {
-            $lstags = $this->_cacheTags;
+            $lstags = $this->translateTags($this->_cacheTags);
             if (is_array($lstags)) {
-                $lstags = implode(',', $this->_cacheTags);
-                $lstags = $this->translateTags($lstags);
+                $lstags = implode(',', array_unique($lstags));
             }
             $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
             $response->clearHeader('X-Magento-Tags');
@@ -314,22 +313,23 @@ class CacheControl
 
     public function setPurgeHeaders($response)
     {
-        if (!empty($this->_purgeTags)) {
-            if (in_array('*', $this->_purgeTags)) {
-                $purgeTags = '*';
-            } else {
-                $purgeTags = $this->translateTags(implode(',', $this->_purgeTags));
-            }
-            $response->setHeader(self::LSHEADER_PURGE, $purgeTags);
-			$om = $this->context->getObjectManager();
-			$state = $om->get('Magento\Framework\App\State');
-			if ($state->getAreaCode() === \Magento\Framework\App\Area::AREA_ADMINHTML) {
-				// if in adminhtml, show the message
-				$this->context->getMessageManager()->addSuccessMessage('Informed LiteSpeed Web Server to purge ' . $purgeTags);
-			}
-			
-            $this->debugLog('Set purge header ' . $purgeTags);
-        }
+        if (empty($this->_purgeTags))
+			return;
+
+		if (in_array('*', $this->_purgeTags)) {
+			$purgeTags = '*';
+		} else {
+			$purgeTags = 'tag=' . implode(',tag=', array_unique($this->translateTags($this->_purgeTags)));
+		}
+		$response->setHeader(self::LSHEADER_PURGE, $purgeTags);
+		$om = $this->context->getObjectManager();
+		$state = $om->get('Magento\Framework\App\State');
+		if ($state->getAreaCode() === \Magento\Framework\App\Area::AREA_ADMINHTML) {
+			// if in adminhtml, show the message
+			$this->context->getMessageManager()->addSuccessMessage('Informed LiteSpeed Web Server to purge ' . $purgeTags);
+		}
+
+		$this->debugLog('Set purge header ' . $purgeTags);
     }
 
     public function addCacheTags($tags)
@@ -347,14 +347,27 @@ class CacheControl
         $this->_cacheTags = $tags;
     }
 
-    public function translateTags($tagString)
+	/**
+	 * translateTags
+	 * @param string or array of strings $tagString
+	 * @return string or array
+	 */
+    // input can be array or string
+	public function translateTags($tagString)
     {
-        $lstags = str_replace(['_block', 'catalog_product_', 'catalog_category_',
-            'catalog_category_product_'], ['.B', 'P.', 'C.', 'C.'], $tagString);
-        // $this->debugLog("in translate tags from = $tagString , to = $lstags");
+		$search = ['_block', 
+			'catalog_product_', 
+			'catalog_category_product_', // sequence matters, need to be in front of shorter ones
+			'catalog_category_' ];
+		$replace = ['.B', 'P.', 'C.', 'C.'];
+		
+        $lstags = str_replace($search, $replace, $tagString);
+		
+		//$this->debugLog("in translate tags from = $tagString , to = $lstags");
         return $lstags;
     }
 
+	// used by ESI blocks
     public function getElementCacheTags($layout, $elementName)
     {
         if (!$layout->hasElement($elementName))
@@ -389,10 +402,12 @@ class CacheControl
                 }
             }
         }
-        $lstag = $this->translateTags(implode(',', array_unique($tags)));
-        if ($lstag == '') {
+		if (!empty($tags)) {
+			$lstag = implode(',', array_unique($this->translateTags($tags)));
+		}
+		else {
             $lstag = $elementName;
-        }
+		}
         return $lstag;
     }
 

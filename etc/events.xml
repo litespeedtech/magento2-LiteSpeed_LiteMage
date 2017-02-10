@@ -19,7 +19,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -57,11 +57,11 @@
     <event name="catalog_category_delete_after">
         <observer name="litemage_purge_events" instance="Litespeed\Litemage\Observer\FlushCacheByEvents" />
     </event>
-    <event name="litemage_cli_purge_all">
-        <observer name="litemage_cli_purge_all" instance="Litespeed\Litemage\Observer\FlushCacheByCli"/>
+    <event name="litemage_cli_purge">
+        <observer name="litemage_cli_purge" instance="Litespeed\Litemage\Observer\FlushCacheByCli"/>
     </event>
-    <event name="litemage_purge_all">
-        <observer name="litemage_purge_all_internal" instance="Litespeed\Litemage\Observer\FlushCacheByEvents"/>
+    <event name="litemage_purge">
+        <observer name="litemage_purge_internal" instance="Litespeed\Litemage\Observer\FlushCacheByEvents"/>
     </event>
     
 </config>

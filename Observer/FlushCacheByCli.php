@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -78,14 +78,34 @@ class FlushCacheByCli implements ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if ($this->config->cliModuleEnabled() 
-				&& ($this->coreRegistry->registry('shellPurgeAll') === null)) {
-			$this->coreRegistry->register('shellPurgeAll', 1);
-			$this->_shellPurgeAll();
+		if (!$this->config->moduleEnabled())
+			return;
+
+		$event = $observer->getEvent();
+		$tags = $event->getTags();
+		
+		if (in_array('*', $tags)) {
+			if ($this->coreRegistry->registry('shellPurgeAll') === null) {
+				$this->coreRegistry->register('shellPurgeAll', 1);
+				$this->_shellPurge(['all' => 1]);
+			}
+		}
+		else {
+			$tags = array_unique($tags);
+			$used = [];
+			foreach ($tags as $tag) {
+				if ($this->coreRegistry->registry("shellPurge_{$tag}") === null) {
+					$this->coreRegistry->register("shellPurge_{$tag}", 1);
+					$used[] = $tag;
+				}
+			}
+			if (!empty($used)) {
+				$this->_shellPurge(['tags' => implode(',', $used)]);
+			}
 		}
     }
 	
-	protected function _shellPurgeAll()
+	protected function _shellPurge($params)
 	{
 		$client = $this->httpClientFactory->create();
 		
@@ -95,7 +115,8 @@ class FlushCacheByCli implements ObserverInterface
 		
 		$client->setConfig($clientConfig);
 		$client->setMethod(\Zend_Http_Client::POST);
-		$client->setParameterPost('all', 1);
+		foreach($params as $k => $v)
+		$client->setParameterPost($k, $v);
 		
 		$server_ip = false; //in future, allow this configurable.
 		$base = $this->url->getBaseUrl();
@@ -121,7 +142,6 @@ class FlushCacheByCli implements ObserverInterface
 		}
 
         return true;
-		
 	}
 	
 }

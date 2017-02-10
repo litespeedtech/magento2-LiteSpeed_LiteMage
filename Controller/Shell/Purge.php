@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -68,21 +68,10 @@ class Purge extends \Magento\Framework\App\Action\Action
 		if ($req->getParam('all')) {
 			$tags[] = '*';
 		}
-		else {
-			if ($t = $req->getParam('tags')) {
-				$tags = explode(',', $t);
-			}
-			$types = array('P.' => 'products', 'C.' => 'cats', 'S.' => 'stores');
-			foreach ($types as $prefix => $type) {
-				if ($ids = $req->getParam($type)) {
-					$tids = explode(',', $ids);
-					foreach ($tids as $id) {
-						$tags[] = $prefix . $id;
-					}
-				}
-			}
-			$tags = array_unique($tags);
+		elseif ($t = $req->getParam('tags')) {
+			$tags = explode(',', $t);
 		}
+		
 		if (empty($tags)) {
 			$this->_errorExit('Invalid url');
 		}

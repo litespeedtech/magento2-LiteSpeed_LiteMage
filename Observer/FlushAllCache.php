@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -29,6 +29,9 @@ use Magento\Framework\Event\ObserverInterface;
 
 class FlushAllCache implements ObserverInterface
 {
+    /**
+     * @var \Litespeed\Litemage\Model\Config
+     */
 	protected $config;
 	
     /** @var \Magento\Framework\Event\ManagerInterface */
@@ -54,13 +57,16 @@ class FlushAllCache implements ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
+		if (!$this->config->moduleEnabled())
+			return;
+		
+		$tags = ['tags' => ['*']];
 		if (PHP_SAPI == 'cli') {
 			// from command line
-			if ($this->config->cliModuleEnabled())
-				$this->eventManager->dispatch('litemage_cli_purge_all');
+			$this->eventManager->dispatch('litemage_cli_purge', $tags);
 		}
-		else if ($this->config->moduleEnabled()) {
-			$this->eventManager->dispatch('litemage_purge_all');
+		else {
+			$this->eventManager->dispatch('litemage_purge', $tags);
         }
     }
 	
