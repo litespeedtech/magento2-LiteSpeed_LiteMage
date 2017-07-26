@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -76,7 +76,7 @@ class Config
 	 *	 2: FPC enabled
 	 *   4: FPC type is LITEMAGE
 	 */
-	protected $_moduleStatus = 0; 
+	protected $_moduleStatus = 0;
 
     /**
      * @param Filesystem\Directory\ReadFactory $readFactory
@@ -94,16 +94,16 @@ class Config
         $this->readFactory = $readFactory;
         $this->scopeConfig = $scopeConfig;
         $this->reader = $reader;
-		
-		if (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE']) {
-			$this->_moduleStatus |= 1;
+
+		if ($this->licenseEnabled()) {
+            $this->_moduleStatus |= 1;
 		}
         if ($pagecacheConfig->isEnabled()) {
 			$this->_moduleStatus |= 2;
 		}
         if ($pagecacheConfig->getType() == self::LITEMAGE) {
 			$this->_moduleStatus |= 4;
-        }		
+        }
 
         if ($state->getMode() === \Magento\Framework\App\State::MODE_PRODUCTION) {
             // turn off debug for production
@@ -136,6 +136,11 @@ class Config
         return $this->_debug;
     }
 
+    public function licenseEnabled()
+    {
+        return ( (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE'])
+                || (isset($_SERVER['HTTP_X_LITEMAGE']) && $_SERVER['HTTP_X_LITEMAGE']));
+    }
 
     /**
      * Return page lifetime

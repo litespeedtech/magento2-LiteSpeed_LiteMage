@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  *
@@ -18,11 +19,9 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
-
 namespace Litespeed\Litemage\Model\Controller\Result;
 
 use Magento\Framework\App\Response\Http as ResponseHttp;
@@ -44,17 +43,25 @@ class LitemagePlugin
     protected $version;
 
     /**
+     * @var \Magento\Framework\Registry
+     */
+    protected $registry;
+
+    /**
      * Constructor
      *
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      * @param \Magento\Framework\App\PageCache\Version $version
      */
     public function __construct(
-    \Litespeed\Litemage\Model\CacheControl $litemageCache, \Magento\Framework\App\PageCache\Version $version
+        \Litespeed\Litemage\Model\CacheControl $litemageCache,
+        \Magento\Framework\App\PageCache\Version $version,
+        \Magento\Framework\Registry $registry
     )
     {
         $this->litemageCache = $litemageCache;
         $this->version = $version;
+        $this->registry = $registry;
     }
 
     /**
@@ -65,15 +72,17 @@ class LitemagePlugin
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function aroundRenderResult(
-    \Magento\Framework\Controller\ResultInterface $subject, \Closure $proceed, ResponseHttp $response
+        \Magento\Framework\Controller\ResultInterface $subject,
+        \Closure $proceed,
+        ResponseHttp $response
     )
     {
-        $proceed($response);
-
-        if ($this->litemageCache->moduleEnabled()) {
+        $result = $proceed($response);
+        $usePlugin = $this->registry->registry('use_page_cache_plugin');
+        if ($usePlugin && $this->litemageCache->moduleEnabled()) {
             $this->version->process();
         }
-        return $subject;
+        return $result;
     }
 
 }

@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -55,7 +55,7 @@ class HttpPurgePlugin
      */
     public function beforeSendResponse(\Magento\Framework\App\Response\Http $subject)
     {
-        if ($this->litemageCache->moduleEnabled()) {
+        if ($this->litemageCache->needPurge()) {
             $this->litemageCache->setPurgeHeaders($subject);
         }
     }

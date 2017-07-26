@@ -18,7 +18,7 @@
  *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
  *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -61,7 +61,6 @@ class CacheControl
     /** @var \Magento\Framework\App\Http\Context */
     protected $httpContext;
     protected $request;
-	protected $context;
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected $cookieManager;
@@ -77,7 +76,6 @@ class CacheControl
      * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
      * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
      * @param \Magento\Framework\App\Request\Http $request,
-	 * @param \Magento\Framework\App\Action\Context $context,
      * @param \Litespeed\Litemage\Model\Config $config,
      * @param \Litespeed\Litemage\Helper\Data $helper
      */
@@ -85,7 +83,6 @@ class CacheControl
             \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
             \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
             \Magento\Framework\App\Request\Http $request,
-			\Magento\Framework\App\Action\Context $context,
             \Litespeed\Litemage\Model\Config $config,
             \Litespeed\Litemage\Helper\Data $helper
     )
@@ -94,7 +91,6 @@ class CacheControl
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->request = $request;
-		$this->context = $context;
         $this->config = $config;
         $this->helper = $helper;
         $this->_moduleEnabled = $config->moduleEnabled();
@@ -126,7 +122,7 @@ class CacheControl
     {
         return $this->_debug;
     }
-	
+
 	public function needPurge()
 	{
 		return ($this->_moduleEnabled && !empty($this->_purgeTags));
@@ -136,7 +132,7 @@ class CacheControl
 	 * Add purgeable tags
 	 * @param array $tags
 	 * @param string $source
-	 * 
+	 *
 	 */
     public function addPurgeTags($tags, $source)
     {
@@ -144,8 +140,8 @@ class CacheControl
 			$this->_purgeTags = array_unique(array_merge($this->_purgeTags, $tags));
 		}
 		if ($this->_debug) {
-			$this->debugLog('add purge tags from ' 
-					. $source . ' : ' . implode(',', $tags) 
+			$this->debugLog('add purge tags from '
+					. $source . ' : ' . implode(',', $tags)
 					. ' Result=' . implode(',',$this->_purgeTags) );
 		}
     }
@@ -306,6 +302,10 @@ class CacheControl
                 $this->cookieManager->deleteCookie(self::ENV_VARYCOOKIE_DEFAULT,
                         $cookieMetadata);
             }
+            $this->_isCacheable = 0; // vary change
+            if ($this->_debug) {
+                $this->debugLog('Not cacheable - EnvVary change: ' . print_r($data,true));
+            }
             return true;
         }
         return false;
@@ -322,13 +322,6 @@ class CacheControl
 			$purgeTags = 'tag=' . implode(',tag=', array_unique($this->translateTags($this->_purgeTags)));
 		}
 		$response->setHeader(self::LSHEADER_PURGE, $purgeTags);
-		$om = $this->context->getObjectManager();
-		$state = $om->get('Magento\Framework\App\State');
-		if ($state->getAreaCode() === \Magento\Framework\App\Area::AREA_ADMINHTML) {
-			// if in adminhtml, show the message
-			$this->context->getMessageManager()->addSuccessMessage('Informed LiteSpeed Web Server to purge ' . $purgeTags);
-		}
-
 		$this->debugLog('Set purge header ' . $purgeTags);
     }
 
@@ -355,14 +348,15 @@ class CacheControl
     // input can be array or string
 	public function translateTags($tagString)
     {
-		$search = ['_block', 
-			'catalog_product_', 
+		$search = ['_block',
+			'catalog_product_',
+			'catalog_product',
 			'catalog_category_product_', // sequence matters, need to be in front of shorter ones
 			'catalog_category_' ];
-		$replace = ['.B', 'P.', 'C.', 'C.'];
-		
+		$replace = ['.B', 'P.', 'P', 'C.', 'C.'];
+
         $lstags = str_replace($search, $replace, $tagString);
-		
+
 		//$this->debugLog("in translate tags from = $tagString , to = $lstags");
         return $lstags;
     }
