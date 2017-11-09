@@ -45,7 +45,7 @@ class ApplicationPlugin
         if ($this->_hasLicense()) {
             $result[] = [
                         'value' => \Litespeed\Litemage\Model\Config::LITEMAGE,
-                        'label' => __('LiteMage Cache within LiteSpeed Server')
+                        'label' => __('LiteMage Cache Built-in to LiteSpeed Server')
             ];
         }
         return $result;
@@ -56,10 +56,10 @@ class ApplicationPlugin
      *
      * @return array
      */
-    public function afterToArray(Magento\PageCache\Model\System\Config\Source\Application $subject, $result)
+    public function afterToArray(\Magento\PageCache\Model\System\Config\Source\Application $subject, $result)
     {
         if ($this->_hasLicense()) {
-            $result[\Litespeed\Litemage\Model\Config::LITEMAGE] = __('LiteMage Cache in LiteSpeed Web Server');
+            $result[\Litespeed\Litemage\Model\Config::LITEMAGE] = __('LiteMage Cache Built-in to LiteSpeed Server');
         }
         return $result;
     }
@@ -70,7 +70,7 @@ class ApplicationPlugin
 			return true; // for lsws
 		}
 		elseif (isset($_SERVER['HTTP_X_LITEMAGE']) && $_SERVER['HTTP_X_LITEMAGE']) {
-			return true; // for lslb
+			return true; // for webadc
 		}
 		else
 			return false;

@@ -32,12 +32,6 @@ class FlushCacheByCli implements ObserverInterface
 	protected $config;
 	protected $logger;
 	protected $url;
-	
-	
-    /**
-     * @var \Magento\Framework\HTTP\ZendClientFactory
-     */
-    protected $httpClientFactory;
 
     /**
      * Core registry
@@ -45,17 +39,15 @@ class FlushCacheByCli implements ObserverInterface
      * @var \Magento\Framework\Registry
      */
     protected $coreRegistry;
-	
+
     /**
      * @param \Litespeed\Litemage\Model\Config $config,
-	 * @param \Magento\Framework\HTTP\ZendClientFactory $httpClientFactory,
 	 * @param \Magento\Framework\Registry $coreRegistry,
 	 * @param \Magento\Framework\Url $url,
      * @param \Psr\Log\LoggerInterface $logger,
 	 * @throws \Magento\Framework\Exception\IntegrationException
      */
     public function __construct(\Litespeed\Litemage\Model\Config $config,
-			\Magento\Framework\HTTP\ZendClientFactory $httpClientFactory,
 			\Magento\Framework\Registry $coreRegistry,
 			\Magento\Framework\Url $url,
 			\Psr\Log\LoggerInterface $logger)
@@ -64,12 +56,11 @@ class FlushCacheByCli implements ObserverInterface
 			throw new \Magento\Framework\Exception\IntegrationException('Should only invoke from command line');
 		}
         $this->config = $config;
-		$this->httpClientFactory = $httpClientFactory;
 		$this->coreRegistry = $coreRegistry;
 		$this->url = $url;
 		$this->logger = $logger;
-    }	
-	
+    }
+
     /**
      * Flush All Litemage cache
      * @param \Magento\Framework\Event\Observer $observer
@@ -83,7 +74,7 @@ class FlushCacheByCli implements ObserverInterface
 
 		$event = $observer->getEvent();
 		$tags = $event->getTags();
-		
+
 		if (in_array('*', $tags)) {
 			if ($this->coreRegistry->registry('shellPurgeAll') === null) {
 				$this->coreRegistry->register('shellPurgeAll', 1);
@@ -104,20 +95,20 @@ class FlushCacheByCli implements ObserverInterface
 			}
 		}
     }
-	
+
 	protected function _shellPurge($params)
 	{
-		$client = $this->httpClientFactory->create();
-		
+		$client = new \Magento\Framework\HTTP\ZendClient();
+
 		$clientConfig = ['verifypeer' => 0,
 			'timeout' => 180,
 			'useragent' => 'litemage_walker'];
-		
+
 		$client->setConfig($clientConfig);
 		$client->setMethod(\Zend_Http_Client::POST);
 		foreach($params as $k => $v)
 		$client->setParameterPost($k, $v);
-		
+
 		$server_ip = false; //in future, allow this configurable.
 		$base = $this->url->getBaseUrl();
 		if ($server_ip) {
@@ -129,7 +120,7 @@ class FlushCacheByCli implements ObserverInterface
 				$client->setHeaders(['Host' => $domain]);
 			}
 		}
-		
+
 		$uri = $base . 'litemage/shell/purge';
 		$client->setUri($uri);
         $client->setUrlEncodeBody(false);
@@ -143,5 +134,5 @@ class FlushCacheByCli implements ObserverInterface
 
         return true;
 	}
-	
+
 }

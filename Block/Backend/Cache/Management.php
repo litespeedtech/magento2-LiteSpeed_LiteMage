@@ -30,32 +30,27 @@ class Management extends \Magento\Backend\Block\Template
      * @var \Litespeed\Litemage\Model\Config
      */
     protected $config;
-	
-	protected $url;
-	
-	
+
     /**
-     * @var \Magento\Framework\HTTP\ZendClientFactory
+     * @var \Magento\Framework\HTTP\ClientFactory
      */
-    protected $httpClientFactory;	
+    protected $httpClientFactory;
     /**
      * @param \Magento\Backend\Block\Template\Context $context
 	 * @param \Litespeed\Litemage\Model\Config $config,
      * @param array $data
      */
     public function __construct(
-			\Magento\Backend\Block\Template\Context $context, 
+			\Magento\Backend\Block\Template\Context $context,
 			\Litespeed\Litemage\Model\Config $config,
-			\Magento\Framework\HTTP\ZendClientFactory $httpClientFactory,
-			\Magento\Framework\Url $url,
+			\Magento\Framework\HTTP\ClientFactory $httpClientFactory,
 			array $data = [])
     {
         parent::__construct($context, $data);
 		$this->config = $config;
 		$this->httpClientFactory = $httpClientFactory;
-		$this->url = $url;
-    }	
-	
+    }
+
     /**
      * Get clean cache url
      *
@@ -81,7 +76,7 @@ class Management extends \Magento\Backend\Block\Template
 	public function getCacheStatistics()
 	{
 		$statUri = '/__LSCACHE/STATS';
-        $base = $this->url->getBaseUrl();
+        $base = $this->getUrl();
 		if ((stripos($base, 'http') !== false) && ($pos = strpos($base, '://'))) {
 			$pos2 = strpos($base, '/', $pos+ 4);
 			if ($pos === false) {
@@ -98,12 +93,10 @@ class Management extends \Magento\Backend\Block\Template
 		}
 		$statUri = $statBase . $statUri;
 
-		$client = $this->httpClientFactory->create();
-		$client->setUri($statUri);
-
 		try {
-			$response = $client->request() ;
-			$data = trim($response->getBody());
+    		$client = $this->httpClientFactory->create();
+			$client->get($statUri) ;
+			$data = trim($client->getBody());
 			if ($data{0} !== '{') {
 				return null;
 			}
