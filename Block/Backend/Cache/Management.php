@@ -95,6 +95,8 @@ class Management extends \Magento\Backend\Block\Template
 
 		try {
     		$client = $this->httpClientFactory->create();
+            $client->setOption(CURLOPT_SSL_VERIFYHOST, 0);
+            $client->setOption(CURLOPT_SSL_VERIFYPEER, 0);
 			$client->get($statUri) ;
 			$data = trim($client->getBody());
 			if ($data{0} !== '{') {
