@@ -51,6 +51,9 @@
     <event name="controller_action_postdispatch_adminhtml_catalog_product_massStatus">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
+    <event name="clean_cache_after_reindex">
+        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
+    </event>
     <event name="catalog_category_save_after">
         <observer name="litemage_purge_events" instance="Litespeed\Litemage\Observer\FlushCacheByEvents" />
     </event>
