@@ -79,7 +79,7 @@ class Management extends \Magento\Backend\Block\Template
         $base = $this->getUrl();
 		if ((stripos($base, 'http') !== false) && ($pos = strpos($base, '://'))) {
 			$pos2 = strpos($base, '/', $pos+ 4);
-			if ($pos === false) {
+			if ($pos2 === false) {
 				$statBase = $base;
 			}
 			else {
@@ -99,7 +99,7 @@ class Management extends \Magento\Backend\Block\Template
             $client->setOption(CURLOPT_SSL_VERIFYPEER, 0);
 			$client->get($statUri) ;
 			$data = trim($client->getBody());
-			if ($data{0} !== '{') {
+			if ($data == '' || $data{0} !== '{') {
 				return null;
 			}
 
