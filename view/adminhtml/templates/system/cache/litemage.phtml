@@ -29,10 +29,10 @@ if ($block->canShowButton()):
 <br>
 <div class="additional-cache-management">
     <h2>
-        <span><?php /* @escapeNotVerified */ echo __('LiteMage Cache Management (LiteSpeed Web Server)') ?></span>
+        <span><?php /* @escapeNotVerified */ echo __('LiteMage Cache Status (LiteSpeed Web Server)') ?></span>
     </h2>
 </div>
-<?php 
+<?php
 
 
 if ($stats = $block->getCacheStatistics()) :
@@ -40,47 +40,35 @@ if ($stats = $block->getCacheStatistics()) :
 
 <div><table class="data-grid">
     <tr>
-		<th class="data-grid-th" width="25%"><?php echo __('Current LiteMage Plan');?></th>
-		<th class="data-grid-th" width="25%"><?php echo __('Public Cache Hits'); ?></th>
-		<th class="data-grid-th" width="25%"><?php echo __('Full Page Hits'); ?></th>
-		<th class="data-grid-th" width="25%"><?php echo __('LiteMage Cached Objects'); ?></th>
+        <th class="data-grid-th" width="40%"><?php echo __('LiteMage Plan');?></th>
+		<th class="data-grid-th" width="20%"><?php echo __('Public Cache Hits'); ?></th>
+		<th class="data-grid-th" width="20%"><?php echo __('LiteMage Cached Objects'); ?></th>
+        <th class="data-grid-th" width="20%"><?php echo __('Not Cached (Limited by Plan)'); ?></th>
 	</tr>
-	<?php 
+	<?php
 		$severity = $stats['LITEMAGE_LIMITED'] > 0 ? 'grid-severity-critical' : 'grid-severity-notice';
 		$noteclass = 'notifications-entry-description';
-		echo '<tr><td><div class="' . $severity . '">' . $stats['plan'] 
-				. '</div></td><td>' . $stats['PUB_HITS']
-				. '<div class="' . $noteclass . '">' . __('Number of requests that hit public cache since last flush all') 
-				. '</div></td><td>' . $stats['FULLPAGE_HITS']
-				. '<div class="' . $noteclass . '">'  . __('Number of requests fully served from cache (no PHP invoked) since last flush all')
-				. '</div></td><td>' . $stats['LITEMAGE_OBJS']
-				. '<div class="' . $noteclass . '">'  . __('Current publicly cached object count')
-				. "</div></td></tr>\n";
-	?>
-    <tr>
-		<th class="data-grid-th"><?php echo __('Available Plan Options');?>
-		</th>
-		<th class="data-grid-th"><?php echo __('Private Cache Hits'); ?></th>
-		<th class="data-grid-th"><?php echo __('Partial Page Hits'); ?></th>
-		<th class="data-grid-th"><?php echo __('Not Cached (Limited by Plan)'); ?></th>
-	</tr>
-	<?php 
-		echo '<tr><td>' . __('LiteMage Starter') 
-				. '<div class="' . $noteclass . '">' . __('1,500 publicly cached objects') 
+
+        echo '<tr><td><div class="' . $severity . '">' . __('Current Plan: ') . $stats['plan']
+                . '</div><br><div class="' . $noteclass . '">' . __('Available Options') . '</div>'
+                . __('LiteMage Starter')
+				. '<div class="' . $noteclass . '">' . __('1,500 publicly cached objects')
 				. '</div>' . __('LiteMage Standard')
-				. '<div class="' . $noteclass . '">' . __('25,000 publicly cached objects') 
+				. '<div class="' . $noteclass . '">' . __('25,000 publicly cached objects')
 				. '</div>' . __('LiteMage Unlimited')
 				. '<div class="' . $noteclass . '">' . __('unlimited publicly cached objects')
-				. '</div></td><td>'. $stats['PVT_HITS']
-				. '<div class="' . $noteclass . '">' . __('Number of requests that hit private cache since last flush all') 
-				. '</div></td><td>'. $stats['PARTIAL_HITS']
-				. '<div class="' . $noteclass . '">' . __('Number of requests partially served from cache (some data retrieved from Magento) since last flush all') 
-				. '</div></td><td><div class="' . $severity . '">' . $stats['LITEMAGE_LIMITED']
-				. '</div><div class="' . $noteclass . '">' . __('Number of requests not served from cache due to plan limitation. You can upgrade your LiteMage plan if this value is not zero.')
-				. "</div></td></tr>\n";
+				. '</div></td><td>'
+                . $stats['PUB_HITS']
+				. '<br><br>' . __('Number of requests that hit public cache since last Flush All')
+				. '</td><td>' . $stats['LITEMAGE_OBJS']
+				. '<br><br>'  . __('Current count of publicly cached objects')
+				. '</td><td><div class="' . $severity . '">' . $stats['LITEMAGE_LIMITED']
+				. '</div><br>' . __('Number of requests not served from cache due to plan limitation. You should upgrade your LiteMage plan if this value is not 0.')
+				. "</td></tr>\n";
 	?>
 	</table>
 	</div>
+
 <?php
 endif;
 ?>

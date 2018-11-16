@@ -98,41 +98,55 @@ class FlushCacheByCli implements ObserverInterface
 
 	protected function _shellPurge($params)
 	{
-		$client = new \Magento\Framework\HTTP\ZendClient();
-
-		$clientConfig = ['verifypeer' => 0,
-			'timeout' => 180,
-			'useragent' => 'litemage_walker'];
-
-		$client->setConfig($clientConfig);
-		$client->setMethod(\Zend_Http_Client::POST);
-		foreach($params as $k => $v)
-		$client->setParameterPost($k, $v);
-
 		$server_ip = false; //in future, allow this configurable.
-		$base = $this->url->getBaseUrl();
+        $uparams = ['_type'   => \Magento\Framework\UrlInterface::URL_TYPE_LINK,
+            '_secure' => true];
+        $base = $this->url->getBaseUrl($uparams);
+        $headers = [];
 		if ($server_ip) {
 			$pattern = "/:\/\/([^\/^:]+)(\/|:)?/";
 			if (preg_match($pattern, $base, $m)) {
 				$domain = $m[1];
 				$pos = strpos($base, $domain);
 				$base = substr($base, 0, $pos) . $server_ip . substr($base, $pos + strlen($domain));
-				$client->setHeaders(['Host' => $domain]);
+                $headers[] = "Host: $domain";
 			}
 		}
 
 		$uri = $base . 'litemage/shell/purge';
-		$client->setUri($uri);
-        $client->setUrlEncodeBody(false);
+
 		try {
-			$response = $client->request();
-			$this->logger->debug($uri . ' ' . $response->getBody());
-		} catch (\Zend_Http_Client_Exception $e) {
-			$this->logger->critical($uri . ' ' . $e->getMessage());
-			return false;
-		}
+
+            $curl = curl_init();
+
+            $options = [CURLOPT_CUSTOMREQUEST  => 'POST',
+                CURLOPT_URL            => $uri,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_VERIFYPEER => 0,
+                CURLOPT_SSL_ENABLE_ALPN => false,
+                CURLOPT_SSL_ENABLE_NPN => false,
+                CURLOPT_SSL_VERIFYSTATUS => false,
+                CURLOPT_HEADER         => false,
+                CURLOPT_TIMEOUT        => 180,
+                CURLOPT_USERAGENT      => 'litemage_walker',
+                CURLOPT_POSTFIELDS     => $params,
+            ];
+
+            curl_setopt_array($curl, $options);
+            if (!empty($headers)) {
+                curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+            }
+
+            $response = curl_exec($curl);
+            curl_close($curl);
+            $this->logger->debug($uri . ' ' . $response);
+        } catch (\Exception $e) {
+            $this->logger->critical($uri . ' ' . $e->getMessage());
+            return false;
+        }
 
         return true;
-	}
+    }
+
 
 }
