@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @package   LiteSpeed_LiteMage
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Litespeed\Litemage\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    
+    <type name="Litespeed\Litemage\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">LiteMage</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="core" xsi:type="object">Litespeed\Litemage\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

@@ -1,28 +1,10 @@
 <?xml version="1.0"?>
 <!--
 /**
- * LiteMage
- *
- * NOTICE OF LICENSE
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
- *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
-
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
     <!-- flush all -->
@@ -30,6 +12,12 @@
         <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
     </event>
     <event name="adminhtml_cache_flush_all">
+        <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
+    </event>
+    <event name="clean_media_cache_after">
+        <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
+    </event>
+    <event name="clean_catalog_images_cache_after">
         <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
     </event>
     <event name="adminhtml_cache_refresh_type">
@@ -49,6 +37,9 @@
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
     <event name="controller_action_postdispatch_adminhtml_catalog_product_massStatus">
+        <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
+    </event>
+    <event name="controller_action_postdispatch_catalog_product_save">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
     </event>
     <event name="clean_cache_after_reindex">

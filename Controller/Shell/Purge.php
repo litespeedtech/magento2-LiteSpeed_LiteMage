@@ -1,24 +1,8 @@
 <?php
 /**
  * LiteMage
- *
- * NOTICE OF LICENSE
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
- *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
@@ -32,7 +16,6 @@ class Purge extends \Magento\Framework\App\Action\Action
      */
     protected $litemageCache;
 	protected $httpHeader;
-
 
     /**
      * @param \Magento\Framework\App\Action\Context $context
@@ -62,7 +45,7 @@ class Purge extends \Magento\Framework\App\Action\Action
 		if ( $this->httpHeader->getHttpUserAgent() !== 'litemage_walker') {
 			return $this->_errorExit('Access denied');
 		}
-		
+
 		$tags = [];
 		$req = $this->getRequest();
 		if ($req->getParam('all')) {
@@ -71,7 +54,7 @@ class Purge extends \Magento\Framework\App\Action\Action
 		elseif ($t = $req->getParam('tags')) {
 			$tags = explode(',', $t);
 		}
-		
+
 		if (empty($tags)) {
 			$this->_errorExit('Invalid url');
 		}
@@ -80,12 +63,12 @@ class Purge extends \Magento\Framework\App\Action\Action
 			$this->getResponse()->setBody('purged tags ' . implode(',', $tags));
 		}
     }
-	
+
     protected function _errorExit($errorMesg)
     {
         $resp = $this->getResponse() ;
         $resp->setHttpResponseCode(500) ;
         $resp->setBody($errorMesg) ;
 		$this->litemageCache->debugLog('litemage/shell/purge ErrorExit: ' . $errorMesg) ;
-    }	
+    }
 }

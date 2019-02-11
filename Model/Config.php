@@ -1,31 +1,12 @@
 <?php
 /**
  * LiteMage
- *
- * NOTICE OF LICENSE
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
- *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
 namespace Litespeed\Litemage\Model;
-
-use Magento\Framework\Filesystem;
-use Magento\Framework\Module\Dir;
 
 /**
  * Class Config
@@ -44,15 +25,17 @@ class Config
 	const STOREXML_PUBLICTTL = 'system/full_page_cache/ttl';
 
     const CFG_DEBUGON = 'debug' ;
+    const CFG_CONTEXTBYPASS = 'contextbypass';
     //const CFG_ADMINIPS = 'admin_ips';
     const CFG_PUBLICTTL = 'public_ttl';
     const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
 
     // config items
-    protected $_conf = array() ;
+    protected $_conf = [];
     protected $_userModuleEnabled = -2 ; // -2: not set, true, false
     protected $_esiTag;
     protected $_isDebug ;
+    protected $_bypassedContext = [];
 
     /**
      * @var \Magento\Framework\App\Config\ScopeConfigInterface
@@ -105,14 +88,7 @@ class Config
 			$this->_moduleStatus |= 4;
         }
 
-        if ($state->getMode() === \Magento\Framework\App\State::MODE_PRODUCTION) {
-            // turn off debug for production
-            $this->_debug = 0;
-        }
-        else {
-            $this->_debug = $this->getConf(self::CFG_DEBUGON);
-        }
-
+        $this->_debug = $this->getConf(self::CFG_DEBUGON);
     }
 
 
@@ -176,17 +152,6 @@ class Config
         return $ignored;
     }
 
-    public function isAdminIP()
-    {
-        if ($adminIps = $this->getConf(self::CFG_ADMINIPS) ) {
-            $remoteAddr = Mage::helper('core/http')->getRemoteAddr() ;
-            if (in_array($remoteAddr, $adminIps)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public function esiTag($type)
     {
         if (isset($this->_esiTag[$type])) {
@@ -208,27 +173,63 @@ class Config
             return $this->_conf[$type][$name] ;
     }
 
+    public function getBypassedContext()
+    {
+        return $this->getConf(self::CFG_CONTEXTBYPASS);
+    }
+
     protected function _initConf( $type = '' )
     {
         $this->_conf = [];
-      //  return;
+
         if ( ! isset($this->_conf['defaultlm']) ) {
             $this->_conf['defaultlm'] = $this->scopeConfig->getValue(self::CFGXML_DEFAULTLM) ;
         }
+        $lm = $this->_conf['defaultlm'];
         $pattern = "/[\s,]+/" ;
 
         switch ( $type ) {
 
             default:
-                $general = $this->_conf['defaultlm']['general'] ;
+                $debugon = $lm['dev'][self::CFG_DEBUGON] ?: 0;
+                if ($debugon && isset($lm['dev']['debug_ips'])) {
+                    // check ips
+                    $debugips = trim($lm['dev']['debug_ips']);
+                    if (PHP_SAPI !== 'cli' && $debugips) {
+                        $ips = array_unique(preg_split($pattern, $debugips, null, PREG_SPLIT_NO_EMPTY));
+                        if (!empty($ips)) {
+                            $ip = $this->_getIp();
+                            if (!in_array($ip, $ips)) {
+                                $debugon = 0;
+                            }
+                        }
+                    }
+                }
 
-                $this->_conf[self::CFG_DEBUGON] = $general[self::CFG_DEBUGON] ;
-                $this->_isDebug = $this->_conf[self::CFG_DEBUGON] ; // required by cron, needs to be set even when module disabled.
+                $this->_conf[self::CFG_DEBUGON] = $debugon ;
+                $this->_isDebug = $debugon;
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
+                $bypass = $lm['general'][self::CFG_CONTEXTBYPASS] ?: '';
+                if ($bypass) {
+                    $this->_conf[self::CFG_CONTEXTBYPASS] = array_unique(preg_split($pattern, $bypass, null, PREG_SPLIT_NO_EMPTY));
+                } else {
+                    $this->_conf[self::CFG_CONTEXTBYPASS] = [];
+                }
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
         }
     }
 
+    protected function _getIp()
+    {
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } else {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        return $ip;
+    }
 
 }

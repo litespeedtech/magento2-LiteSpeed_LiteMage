@@ -1,25 +1,8 @@
 <?xml version="1.0"?>
 <!--
 /**
- * LiteMage
- *
- * NOTICE OF LICENSE
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
- *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 -->
@@ -30,12 +13,23 @@
             <label>LiteMage Cache</label>
             <tab>advanced</tab>
             <resource>Magento_Config::config_system</resource>
-            <group id="general" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>General Settings</label>
-                <field id="debug" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="contextbypass" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Context Vary Bypass</label>
+                    <comment>By default, LiteMage will not cache if there is a context vary change in the current response. If certain context changes are global and cacheable, you can list their names in a comma-delimited string. LiteMage cache vary will bypass those context changes. Example: current_layout, weltpixel_gtm.</comment>
+                </field>
+            </group>
+            <group id="dev" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Developer Settings</label>
+                <field id="debug" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enable Debug</label>
-                    <comment>Prints additional information to var/log/debug.log for debugging purposes.</comment>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Prints debug information to var/log/litemage.log. You can temporarily enable debug response headers. Please disable for production usage. </comment>
+                    <source_model>Litespeed\Litemage\Model\System\Config\Source\EnableDebug</source_model>
+                </field>
+                <field id="debug_ips" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Log Debug Messages Only for Listed IPs</label>
+                    <comment>Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and maybe easier for trouble shooting.</comment>
                 </field>
             </group>
         </section>

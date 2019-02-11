@@ -1,30 +1,12 @@
 <?php
 /**
  * LiteMage
- *
- * NOTICE OF LICENSE
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
- *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
 namespace Litespeed\Litemage\Model\App\FrontController;
-
-use Magento\Framework\App\Response\Http as ResponseHttp;
 
 /**
  * Plugin for processing litemage cache
@@ -68,9 +50,10 @@ class LitemagePlugin
         \Closure $proceed,
         \Magento\Framework\App\RequestInterface $request
     ) {
+        $this->litemageCache->debugLog('aroundDispatch0 ' . $request->getMethod() . ' '. $request->getUriString());
         $response = $proceed($request);
-        $this->litemageCache->debugLog('process dispatch action=' . $request->getActionName());
-        if ($this->litemageCache->moduleEnabled() && $response instanceof ResponseHttp) {
+        $this->litemageCache->debugLog('aroundDispatch1 FrontController ' . $request->getModuleName() . ':' . $request->getActionName() . ' cacheable=' . (int)$this->litemageCache->isCacheable());
+        if ($this->litemageCache->moduleEnabled() && $response instanceof \Magento\Framework\App\Response\Http) {
             $this->version->process();
         }
         return $response;

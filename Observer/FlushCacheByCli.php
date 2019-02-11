@@ -1,37 +1,19 @@
 <?php
 /**
  * LiteMage
- *
- * NOTICE OF LICENSE
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see https://opensource.org/licenses/GPL-3.0 .
- *
  * @package   LiteSpeed_LiteMage
- * @copyright  Copyright (c) 2016-2017 LiteSpeed Technologies, Inc. (https://www.litespeedtech.com)
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
  * @license     https://opensource.org/licenses/GPL-3.0
  */
 
-
 namespace Litespeed\Litemage\Observer;
 
-use Magento\Framework\Event\ObserverInterface;
-
-class FlushCacheByCli implements ObserverInterface
+class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 {
 	protected $config;
 	protected $logger;
 	protected $url;
+    protected $_reason;
 
     /**
      * Core registry
@@ -44,13 +26,13 @@ class FlushCacheByCli implements ObserverInterface
      * @param \Litespeed\Litemage\Model\Config $config,
 	 * @param \Magento\Framework\Registry $coreRegistry,
 	 * @param \Magento\Framework\Url $url,
-     * @param \Psr\Log\LoggerInterface $logger,
+     * @param \Litespeed\Litemage\Logger\Logger $logger
 	 * @throws \Magento\Framework\Exception\IntegrationException
      */
     public function __construct(\Litespeed\Litemage\Model\Config $config,
 			\Magento\Framework\Registry $coreRegistry,
 			\Magento\Framework\Url $url,
-			\Psr\Log\LoggerInterface $logger)
+            \Litespeed\Litemage\Logger\Logger $logger)
     {
 		if (PHP_SAPI !== 'cli')	{
 			throw new \Magento\Framework\Exception\IntegrationException('Should only invoke from command line');
@@ -74,6 +56,7 @@ class FlushCacheByCli implements ObserverInterface
 
 		$event = $observer->getEvent();
 		$tags = $event->getTags();
+        $this->_reason = $event->getReason();
 
 		if (in_array('*', $tags)) {
 			if ($this->coreRegistry->registry('shellPurgeAll') === null) {
@@ -114,6 +97,8 @@ class FlushCacheByCli implements ObserverInterface
 		}
 
 		$uri = $base . 'litemage/shell/purge';
+        $result = true;
+        $msg = "FlushCacheByCli {$this->_reason}\n URI = $uri tags={$params['tags']}\n" ;
 
 		try {
 
@@ -123,8 +108,7 @@ class FlushCacheByCli implements ObserverInterface
                 CURLOPT_URL            => $uri,
                 CURLOPT_SSL_VERIFYHOST => 0,
                 CURLOPT_SSL_VERIFYPEER => 0,
-                CURLOPT_SSL_ENABLE_ALPN => false,
-                CURLOPT_SSL_ENABLE_NPN => false,
+                CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
                 CURLOPT_SSL_VERIFYSTATUS => false,
                 CURLOPT_HEADER         => false,
                 CURLOPT_TIMEOUT        => 180,
@@ -139,14 +123,16 @@ class FlushCacheByCli implements ObserverInterface
 
             $response = curl_exec($curl);
             curl_close($curl);
-            $this->logger->debug($uri . ' ' . $response);
+            $msg .= $response;
         } catch (\Exception $e) {
-            $this->logger->critical($uri . ' ' . $e->getMessage());
-            return false;
+            $msg .= 'Exception ' . $e->getMessage();
+            $result = false;
         }
 
-        return true;
+        if ($this->config->debugEnabled()) {
+            $this->logger->notice($msg);
+        }
+        return $result;
     }
-
 
 }
