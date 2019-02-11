@@ -98,7 +98,7 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 
 		$uri = $base . 'litemage/shell/purge';
         $result = true;
-        $msg = "FlushCacheByCli {$this->_reason}\n URI = $uri tags={$params['tags']}\n" ;
+        $msg = "FlushCacheByCli {$this->_reason}\n URI = $uri tags=" . print_r($params, 1);
 
 		try {
 
