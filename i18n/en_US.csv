@@ -25,3 +25,4 @@ No,No
 "Enable Debug","Enable Debug"
 "Prints debug information to var/log/litemage.log. You can temporarily enable debug response headers. Please disable for production usage.","Prints debug information to var/log/litemage.log. You can temporarily enable debug response headers. Please disable for production usage."
 "Log Debug Messages Only for Listed IPs","Log Debug Messages Only for Listed IPs"
+"Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and maybe easier for troubleshooting.","Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and maybe easier for troubleshooting."

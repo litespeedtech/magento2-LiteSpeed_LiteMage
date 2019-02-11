@@ -27,9 +27,9 @@
                     <comment>Prints debug information to var/log/litemage.log. You can temporarily enable debug response headers. Please disable for production usage. </comment>
                     <source_model>Litespeed\Litemage\Model\System\Config\Source\EnableDebug</source_model>
                 </field>
-                <field id="debug_ips" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="debug_ips" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Log Debug Messages Only for Listed IPs</label>
-                    <comment>Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and maybe easier for trouble shooting.</comment>
+                    <comment>Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and maybe easier for troubleshooting.</comment>
                 </field>
             </group>
         </section>
