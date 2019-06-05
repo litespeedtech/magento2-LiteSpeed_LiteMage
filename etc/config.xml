@@ -11,10 +11,12 @@
         <litemage>
             <general>
                 <contextbypass/>
+                <custom_vary>0</custom_vary>
             </general>
             <dev>
                 <debug>0</debug>
                 <debug_ips/>
+                <debug_trace>0</debug_trace>
             </dev>
         </litemage>
     </default>

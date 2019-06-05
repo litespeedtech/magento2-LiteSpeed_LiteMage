@@ -31,6 +31,7 @@ class CacheControl
     const LSHEADER_CACHE_TAG = 'X-LiteSpeed-Tag';
     const LSHEADER_CACHE_VARY = 'X-LiteSpeed-Vary';
     const ENV_VARYCOOKIE_DEFAULT = '_lscache_vary'; // hardcoded by LSWS
+    const LITEMAGE_CUSTVARY_COOKIE = 'litemage-custvary';
 
     const LSHEADER_DEBUG_INFO = 'X-LiteMage-Debug-Info';
     const LSHEADER_DEBUG_CC = 'X-LiteMage-Debug-CC';
@@ -39,6 +40,7 @@ class CacheControl
     const LSHEADER_DEBUG_Purge = 'X-LiteMage-Debug-Purge';
 
     protected $_debug = false;
+    protected $_debugTrace = false;
     protected $_bypassedContext = [];
     protected $_purgeTags = [];
     protected $_cacheTags = [];
@@ -87,16 +89,22 @@ class CacheControl
         $this->_moduleEnabled = $config->moduleEnabled();
         if ($this->_moduleEnabled) {
             $this->_debug = $this->config->debugEnabled();
+            $this->_debugTrace = $this->config->debugTraceEnabled();
             $this->_bypassedContext = $this->config->getBypassedContext();
         }
 
-        $reason = 'CacheControl constructor ';
+        $reason = '';
         if (!$this->_moduleEnabled) {
-            $this->setNotCacheable("$reason module disabled");
+            $reason = 'module disabled';
         } elseif (!$request->isGet() && !$request->isHead()) {
-            $this->setNotCacheable($reason . $request->getMethod());
+            $reason = $request->getMethod();
         } elseif ($request->isAjax() && $request->getQuery('_')) {
-            $this->setNotCacheable("$reason ajax with random string");
+            $reason = 'ajax with random string';
+        }
+
+        if ($reason) {
+            $fullreason = sprintf("%s CacheControl constructor: %s", $request->getRequestUri(), $reason);
+            $this->setNotCacheable($fullreason, $reason);
         }
     }
 
@@ -109,6 +117,17 @@ class CacheControl
     {
         if ($this->_debug) {
             $this->helper->debugLog($message);
+        }
+    }
+
+    public function debugTrace($message)
+    {
+        if ($this->_debug && $this->_debugTrace) {
+            ob_start();
+            debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 200);
+            $trace = ob_get_contents();
+            ob_end_clean();
+            $this->helper->debugLog("***** $message *****\n$trace");
         }
     }
 
@@ -130,14 +149,19 @@ class CacheControl
 	 */
     public function addPurgeTags($tags, $source)
     {
-		if (!empty($tags)) {
-			$this->_purgeTags = array_unique(array_merge($this->_purgeTags, $tags));
-		}
-		if ($this->_debug) {
-			$this->debugLog('add purge tags from '
+        if (empty($tags)) {
+            return;
+        }
+        $newtags = array_diff($tags, $this->_purgeTags);
+		if (!empty($newtags)) {
+			$this->_purgeTags = array_merge($this->_purgeTags, $newtags);
+    		if ($this->_debug) {
+    			$this->debugLog('add purge tags from '
 					. $source . ' : ' . implode(',', $tags)
 					. ' Result=' . implode(',',$this->_purgeTags) );
-		}
+                $this->debugTrace($source);
+            }
+        }
     }
 
     public function setCacheable($ttl, $msg)
@@ -164,6 +188,14 @@ class CacheControl
     public function setEsiRequest($isEsiReq = true)
     {
         $this->_isEsiRequest = $isEsiReq;
+    }
+
+    public function needCustVaryAjax()
+    {
+        if (($this->_isCacheable === 1) && ($this->config->getCustomVaryMode() == 1)) {
+            return true;
+        }
+        return false;
     }
 
     public function isCacheable()
@@ -241,7 +273,7 @@ class CacheControl
         $cacheControlHeader = '';
         $lstags = '';
         $rawvarydata = '';
-        $changed = $this->_checkCacheVary($rawvarydata);
+        $changed = $this->checkCacheVary($rawvarydata);
 
         $responsecode = $response->getHttpResponseCode();
         if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable == 1)
@@ -258,7 +290,7 @@ class CacheControl
         }
         if ($cacheControlHeader) {
             $response->setHeader(self::LSHEADER_CACHE_CONTROL, $cacheControlHeader);
-            $this->debugLog('SetCacheControlHeaders:' . $cacheControlHeader . ' Tags:' . $lstags);
+            $this->debugLog('SetCacheControlHeaders: ' . $cacheControlHeader . ' Tags:' . $lstags);
 
         }
         if ($cch = $response->getHeader('Cache-Control')) {
@@ -291,11 +323,25 @@ class CacheControl
         return $lstags;
     }
 
-    protected function _checkCacheVary(&$rawdata)
+    public function checkCacheVary(&$rawdata)
     {
+        // check custvary first
+        $varymode = $this->config->getCustomVaryMode();
+        if ($varymode == 2) {
+            $this->httpContext->setValue('litemage_custvary_enforce', $varymode, 0);
+        }
+        if ($varymode) { // 1 or 2
+            $curcustvary = $this->request->get(self::LITEMAGE_CUSTVARY_COOKIE);
+            if ($curcustvary != $varymode) {
+                $cookMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()->setPath('/')->setHttpOnly(false)->setSecure(false);
+                $this->cookieManager->setPublicCookie(self::LITEMAGE_CUSTVARY_COOKIE,
+                        $varymode, $cookMetadata);
+            }
+        }
+
         $varyString = null;
         $data = $this->httpContext->getData();
-       if (!empty($data) && !empty($this->_bypassedContext)) {
+        if (!empty($data) && !empty($this->_bypassedContext)) {
             // already not cacheable, like POST request, do filter
             $data = array_filter($data, function($k) {
                 return (!in_array($k, $this->_bypassedContext));

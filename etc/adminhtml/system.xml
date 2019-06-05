@@ -15,9 +15,14 @@
             <resource>Magento_Config::config_system</resource>
             <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>General Settings</label>
-                <field id="contextbypass" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <field id="contextbypass" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Context Vary Bypass</label>
                     <comment>By default, LiteMage will not cache if there is a context vary change in the current response. If certain context changes are global and cacheable, you can list their names in a comma-delimited string. LiteMage cache vary will bypass those context changes. Example: current_layout, weltpixel_gtm.</comment>
+                </field>
+                <field id="custom_vary" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable Custom Vary</label>
+                    <comment>Allows a new visitor to get a properly cached page when there is a customized vary in place. For example, different currencies based on GeoIP.</comment>
+                    <source_model>Litespeed\Litemage\Model\System\Config\Source\CustomVary</source_model>
                 </field>
             </group>
             <group id="dev" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
@@ -29,7 +34,18 @@
                 </field>
                 <field id="debug_ips" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Log Debug Messages Only for Listed IPs</label>
-                    <comment>Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and maybe easier for troubleshooting.</comment>
+                    <comment>Output debug messages only for specified IPs. (Space or comma separated.) This will reduce logged data and may be easier for troubleshooting.</comment>
+                    <depends>
+                        <field id="debug" separator=",">1,2</field>
+                    </depends>
+                </field>
+                <field id="debug_trace" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Log Backtrace for Purge Events</label>
+                    <comment>Prints backtrace for LiteMage purge events. This will help troubleshooting unexpected purges.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends>
+                        <field id="debug" separator=",">1,2</field>
+                    </depends>
                 </field>
             </group>
         </section>

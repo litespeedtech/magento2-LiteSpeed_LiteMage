@@ -1,0 +1,29 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
+ */
+?>
+
+<?php if ($block->needAjax()):?>
+<script>
+    require(['jquery'],function(){
+        jQuery(document).ready(function() {
+            if (document.cookie.indexOf('litemage-custvary') == -1) {
+                jQuery.ajax({
+                    url: '/litemage/block/customVary',
+                    type: 'POST',
+                    success: function(response){
+                        if(response.ajaxReload){
+                            window.location.reload(true);
+                        }
+                    }
+                });
+                return false;
+            };
+        });
+    });
+</script>
+<?php endif?>

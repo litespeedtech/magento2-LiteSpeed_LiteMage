@@ -26,6 +26,7 @@ class Config
 
     const CFG_DEBUGON = 'debug' ;
     const CFG_CONTEXTBYPASS = 'contextbypass';
+    const CFG_CUSTOMVARY = 'custom_vary';
     //const CFG_ADMINIPS = 'admin_ips';
     const CFG_PUBLICTTL = 'public_ttl';
     const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
@@ -52,6 +53,7 @@ class Config
      */
     protected $reader;
     protected $_debug = -1; // avail value: -1(not set), true, false
+    protected $_debug_trace = 0;
 
 	/**
 	 * @var int moduleStatus bitmask
@@ -110,6 +112,11 @@ class Config
     public function debugEnabled()
     {
         return $this->_debug;
+    }
+
+    public function debugTraceEnabled()
+    {
+        return $this->_debug_trace;
     }
 
     public function licenseEnabled()
@@ -178,6 +185,11 @@ class Config
         return $this->getConf(self::CFG_CONTEXTBYPASS);
     }
 
+    public function getCustomVaryMode()
+    {
+        return $this->getConf(self::CFG_CUSTOMVARY);
+    }
+
     protected function _initConf( $type = '' )
     {
         $this->_conf = [];
@@ -208,6 +220,9 @@ class Config
 
                 $this->_conf[self::CFG_DEBUGON] = $debugon ;
                 $this->_isDebug = $debugon;
+                if ($debugon) {
+                    $this->_debug_trace = $lm['dev']['debug_trace'] ?: 0;
+                }
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
                 $bypass = $lm['general'][self::CFG_CONTEXTBYPASS] ?: '';
@@ -216,6 +231,7 @@ class Config
                 } else {
                     $this->_conf[self::CFG_CONTEXTBYPASS] = [];
                 }
+                $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?: 0;
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
         }
     }
