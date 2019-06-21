@@ -9,6 +9,8 @@
 namespace Litespeed\Litemage\Model;
 
 use Magento\Framework\View\Layout\Element as Element;
+use Magento\Framework\App\Http\Context as HttpContext;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * Class CacheControl
@@ -53,13 +55,21 @@ class CacheControl
 
     /** @var \Magento\Framework\App\Http\Context */
     protected $httpContext;
+
     protected $request;
+
+    /** @var \Magento\Framework\Session\SessionManagerInterface */
+    protected $session;
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected $cookieManager;
 
     /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     protected $cookieMetadataFactory;
+
+    /** @var \Magento\Store\Model\StoreManagerInterface */
+    protected $storeManager;
+
     protected $helper;
 
     /**
@@ -68,22 +78,28 @@ class CacheControl
      * @param \Magento\Framework\App\Http\Context $httpContext,
      * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
      * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
-     * @param \Magento\Framework\App\Request\Http $request,
+     * @param \Magento\Framework\App\Request\Http $requObserver/Checkcurrentcountrystore.php
+est,
      * @param \Litespeed\Litemage\Model\Config $config,
      * @param \Litespeed\Litemage\Helper\Data $helper
      */
     public function __construct(\Magento\Framework\App\Http\Context $httpContext,
+            \Magento\Framework\Session\SessionManagerInterface $session,
             \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
             \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
             \Magento\Framework\App\Request\Http $request,
+            \Magento\Store\Model\StoreManagerInterface $storeManager,
             \Litespeed\Litemage\Model\Config $config,
             \Litespeed\Litemage\Helper\Data $helper
     )
     {
         $this->httpContext = $httpContext;
+        $this->session = $session;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->request = $request;
+        $this->storeManager = $storeManager;
+
         $this->config = $config;
         $this->helper = $helper;
         $this->_moduleEnabled = $config->moduleEnabled();
@@ -341,13 +357,27 @@ class CacheControl
 
         $varyString = null;
         $data = $this->httpContext->getData();
+
+        // always check store & currency again. some bad plugins will update store without updating context
+        $currentStore = $this->storeManager->getStore();
+        $defaultStore = $this->storeManager->getDefaultStoreView();
+        if ($currentStore->getCode() != $defaultStore->getCode()) {
+            $data[StoreManagerInterface::CONTEXT_STORE] = $currentStore;
+        }
+
+        $currentCurrency = $this->session->getCurrencyCode() ?: $currentStore->getDefaultCurrencyCode();
+        $defaultCurrency = $defaultStore->getDefaultCurrencyCode();
+        if ($currentCurrency != $defaultCurrency) {
+            $data[HttpContext::CONTEXT_CURRENCY] = $currentCurrency;
+        }
+
         if (!empty($data) && !empty($this->_bypassedContext)) {
             // already not cacheable, like POST request, do filter
             $data = array_filter($data, function($k) {
                 return (!in_array($k, $this->_bypassedContext));
             }, ARRAY_FILTER_USE_KEY);
         }
-
+        
         if (!empty($data)) {
             ksort($data);
             $rawdata = http_build_query($data);
