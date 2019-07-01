@@ -72,6 +72,8 @@ class CacheControl
 
     protected $helper;
 
+    protected $rawVaryString; // for debug only
+
     /**
      * constructor
      *
@@ -288,8 +290,7 @@ est,
     {
         $cacheControlHeader = '';
         $lstags = '';
-        $rawvarydata = '';
-        $changed = $this->checkCacheVary($rawvarydata);
+        $changed = $this->checkCacheVary();
 
         $responsecode = $response->getHttpResponseCode();
         if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable == 1)
@@ -321,7 +322,7 @@ est,
             $response->setHeader(self::LSHEADER_DEBUG_CC, $cacheControlHeader);
             $response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
             $response->setHeader(self::LSHEADER_DEBUG_INFO, substr(htmlspecialchars(str_replace("\n", ' ', $this->_nocacheReason)), 0, 256));
-            $response->setHeader(self::LSHEADER_DEBUG_VARY, $rawvarydata);
+            $response->setHeader(self::LSHEADER_DEBUG_VARY, $this->rawVaryString);
         }
     }
 
@@ -339,9 +340,10 @@ est,
         return $lstags;
     }
 
-    public function checkCacheVary(&$rawdata)
+    public function checkCacheVary()
     {
         // check custvary first
+        $rawdata = $varyString = '';
         $varymode = $this->config->getCustomVaryMode();
         if ($varymode == 2) {
             $this->httpContext->setValue('litemage_custvary_enforce', $varymode, 0);
@@ -355,7 +357,6 @@ est,
             }
         }
 
-        $varyString = null;
         $data = $this->httpContext->getData();
 
         // always check store & currency again. some bad plugins will update store without updating context
@@ -376,12 +377,12 @@ est,
             $data = array_filter($data, function($k) {
                 return (!in_array($k, $this->_bypassedContext));
             }, ARRAY_FILTER_USE_KEY);
-        }
-        
+                }
+
         if (!empty($data)) {
             ksort($data);
             $rawdata = http_build_query($data);
-            $varyString = sha1(serialize($data));
+            $varyString = sha1(json_encode($data));
         }
 
         $changed = false;
@@ -404,6 +405,7 @@ est,
         if ($this->_debug && $rawdata) {
             $this->debugLog("EnvVary: $rawdata");
         }
+        $this->rawVaryString = $rawdata;
         return $changed;
     }
 

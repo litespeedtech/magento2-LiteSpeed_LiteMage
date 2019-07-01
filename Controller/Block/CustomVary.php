@@ -43,8 +43,7 @@ class CustomVary extends \Magento\Framework\App\Action\Action
     {
         $ajaxReload = false;
         if ($this->litemageCache->moduleEnabled()) {
-            $rawvarydata = '';
-            $ajaxReload = $this->litemageCache->checkCacheVary($rawvarydata);
+            $ajaxReload = $this->litemageCache->checkCacheVary();
         }
         $result = $this->jsonFactory->create();
         return $result->setData(['success' => true, 'ajaxReload' => $ajaxReload]);
