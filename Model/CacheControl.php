@@ -361,7 +361,7 @@ est,
 
         // always check store & currency again. some bad plugins will update store without updating context
         $currentStore = $this->storeManager->getStore();
-        $defaultStore = $this->storeManager->getDefaultStoreView();
+        $defaultStore = $this->storeManager->getWebsite()->getDefaultStore();
         if ($currentStore->getCode() != $defaultStore->getCode()) {
             $data[StoreManagerInterface::CONTEXT_STORE] = $currentStore;
         }
@@ -382,7 +382,8 @@ est,
         if (!empty($data)) {
             ksort($data);
             $rawdata = http_build_query($data);
-            $varyString = sha1(json_encode($data));
+            if ($rawdata)
+                $varyString = sha1(json_encode($rawdata));
         }
 
         $changed = false;

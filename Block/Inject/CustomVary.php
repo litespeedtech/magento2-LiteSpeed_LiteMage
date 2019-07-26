@@ -36,4 +36,9 @@ class CustomVary extends \Magento\Framework\View\Element\Template
         return $this->litemageCache->needCustVaryAjax();
     }
 
+    public function getCheckUrl()
+    {
+        $url = $this->getUrl('litemage/block/customVary');
+        return $url;
+    }
 }
