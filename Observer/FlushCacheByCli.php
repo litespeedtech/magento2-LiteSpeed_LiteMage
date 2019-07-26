@@ -106,15 +106,19 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 
             $options = [CURLOPT_CUSTOMREQUEST  => 'POST',
                 CURLOPT_URL            => $uri,
-                CURLOPT_SSL_VERIFYHOST => 0,
-                CURLOPT_SSL_VERIFYPEER => 0,
                 CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-                CURLOPT_SSL_VERIFYSTATUS => false,
                 CURLOPT_HEADER         => false,
                 CURLOPT_TIMEOUT        => 180,
                 CURLOPT_USERAGENT      => 'litemage_walker',
                 CURLOPT_POSTFIELDS     => $params,
             ];
+            if (strpos($uri, 'https://') !== false) {
+                $options[CURLOPT_SSL_VERIFYHOST] = 0;
+                $options[CURLOPT_SSL_VERIFYPEER] = 0;
+                if (defined('CURLOPT_SSL_VERIFYSTATUS')) { // not avail in old lib
+                    $options[CURLOPT_SSL_VERIFYSTATUS] = false;
+                }
+            }
 
             curl_setopt_array($curl, $options);
             if (!empty($headers)) {
