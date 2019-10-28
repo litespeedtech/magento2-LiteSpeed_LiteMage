@@ -12,28 +12,27 @@ class CustomVary extends \Magento\Framework\View\Element\Template
 {
 
     /**
-     * @var \Litespeed\Litemage\Model\CacheControl
+     * @var \Litespeed\Litemage\Helper\Data
      */
-    protected $litemageCache;
+    protected $helper;
 
     /**
-     * @param \Magento\Backend\Block\Template\Context $context
-	 * @param \Litespeed\Litemage\Model\Config $config,
+     * @param \Magento\Framework\View\Element\Template\Context $context,
+	 * @param \Litespeed\Litemage\Helper\Data $helper,
      * @param array $data
      */
     public function __construct(
-			\Magento\Backend\Block\Template\Context $context,
-			\Litespeed\Litemage\Model\CacheControl $litemageCache,
+			\Magento\Framework\View\Element\Template\Context $context,
+			\Litespeed\Litemage\Helper\Data $helper,
 			array $data = [])
     {
         parent::__construct($context, $data);
-        $this->litemageCache = $litemageCache;
+        $this->helper = $helper;
     }
-
 
     public function needAjax()
     {
-        return $this->litemageCache->needCustVaryAjax();
+        return $this->helper->needCustVaryAjax();
     }
 
     public function getCheckUrl()

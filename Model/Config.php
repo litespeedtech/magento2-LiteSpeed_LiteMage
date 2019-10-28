@@ -19,17 +19,16 @@ class Config
      */
     const LITEMAGE = 'LITEMAGE';
 
+    private const CFGXML_DEFAULTLM = 'litemage' ;
 
-    const CFGXML_DEFAULTLM = 'litemage' ;
+	private const STOREXML_PUBLICTTL = 'system/full_page_cache/ttl';
 
-	const STOREXML_PUBLICTTL = 'system/full_page_cache/ttl';
-
-    const CFG_DEBUGON = 'debug' ;
-    const CFG_CONTEXTBYPASS = 'contextbypass';
-    const CFG_CUSTOMVARY = 'custom_vary';
+    private const CFG_DEBUGON = 'debug' ;
+    private const CFG_CONTEXTBYPASS = 'contextbypass';
+    private const CFG_CUSTOMVARY = 'custom_vary';
     //const CFG_ADMINIPS = 'admin_ips';
-    const CFG_PUBLICTTL = 'public_ttl';
-    const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
+    private const CFG_PUBLICTTL = 'public_ttl';
+    private const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
 
     // config items
     protected $_conf = [];
@@ -203,7 +202,7 @@ class Config
         switch ( $type ) {
 
             default:
-                $debugon = $lm['dev'][self::CFG_DEBUGON] ?: 0;
+                $debugon = isset($lm['dev'][self::CFG_DEBUGON]) ? $lm['dev'][self::CFG_DEBUGON] : 0;
                 if ($debugon && isset($lm['dev']['debug_ips'])) {
                     // check ips
                     $debugips = trim($lm['dev']['debug_ips']);
@@ -221,17 +220,17 @@ class Config
                 $this->_conf[self::CFG_DEBUGON] = $debugon ;
                 $this->_isDebug = $debugon;
                 if ($debugon) {
-                    $this->_debug_trace = $lm['dev']['debug_trace'] ?: 0;
+                    $this->_debug_trace = isset($lm['dev']['debug_trace']) ? $lm['dev']['debug_trace'] : 0;
                 }
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
-                $bypass = $lm['general'][self::CFG_CONTEXTBYPASS] ?: '';
+                $bypass = isset($lm['general'][self::CFG_CONTEXTBYPASS]) ? $lm['general'][self::CFG_CONTEXTBYPASS] : '';
                 if ($bypass) {
                     $this->_conf[self::CFG_CONTEXTBYPASS] = array_unique(preg_split($pattern, $bypass, null, PREG_SPLIT_NO_EMPTY));
                 } else {
                     $this->_conf[self::CFG_CONTEXTBYPASS] = [];
                 }
-                $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?: 0;
+                $this->_conf[self::CFG_CUSTOMVARY] = isset($lm['general'][self::CFG_CUSTOMVARY]) ? $lm['general'][self::CFG_CUSTOMVARY] : 0;
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
         }
     }

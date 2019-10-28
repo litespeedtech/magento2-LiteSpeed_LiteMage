@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -10,6 +11,7 @@ namespace Litespeed\Litemage\Controller\Block;
 
 class Esi extends \Magento\Framework\App\Action\Action
 {
+
     /**
      * @var \Magento\Framework\Translate\InlineInterface
      */
@@ -20,7 +22,6 @@ class Esi extends \Magento\Framework\App\Action\Action
      */
     protected $litemageCache;
 
-
     /**
      * @param \Magento\Framework\App\Action\Context $context
      * @param \Magento\Framework\Translate\InlineInterface $translateInline
@@ -30,7 +31,8 @@ class Esi extends \Magento\Framework\App\Action\Action
             \Magento\Framework\App\Action\Context $context,
             \Magento\Framework\Translate\InlineInterface $translateInline,
             \Litespeed\Litemage\Model\CacheControl $litemageCache
-    ) {
+    )
+    {
         parent::__construct($context);
         $this->translateInline = $translateInline;
         $this->litemageCache = $litemageCache;
@@ -49,7 +51,8 @@ class Esi extends \Magento\Framework\App\Action\Action
             $response = $this->getResponse();
             $ttl = 86400;
             $html = $layout->renderElement($block);
-            if ( $tags = $this->litemageCache->getElementCacheTags($layout, $block) ) {
+            if ($tags = $this->litemageCache->getElementCacheTags($layout,
+                                                                  $block)) {
                 $this->litemageCache->setCacheTags($tags);
             }
 
@@ -83,7 +86,7 @@ class Esi extends \Magento\Framework\App\Action\Action
         if ($layout->hasElement($block)) {
             return $layout;
         }
-        else
-            return null;
+        return null;
     }
+
 }

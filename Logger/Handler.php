@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -29,7 +30,7 @@ class Handler extends \Magento\Framework\Logger\Handler\Base
      * @param string $filePath
      */
     public function __construct(\Magento\Framework\Filesystem\DriverInterface $filesystem,
-        $filePath = null)
+                                $filePath = null)
     {
         parent::__construct($filesystem, $filePath);
         $logTag = $this->getLogTag();
@@ -44,14 +45,13 @@ class Handler extends \Magento\Framework\Logger\Handler\Base
 
         if (isset($_SERVER['REMOTE_ADDR'])) {
             // from server http request
-            $tag .= '[';
-            /*if ($this->_httpHeader->getHttpUserAgent() == $cronUserAgent) {
-                $this->_debugTag .= $cronUserAgent . ':';
-            }*/
-            $tag .= $_SERVER['REMOTE_ADDR'];
+            /* if ($this->_httpHeader->getHttpUserAgent() == $cronUserAgent) {
+              $this->_debugTag .= $cronUserAgent . ':';
+              } */
             $msec = microtime();
             $msec1 = substr($msec, 2, strpos($msec, ' ') - 2);
-            $tag .= ':' . $_SERVER['REMOTE_PORT'] . ':' . $msec1 . ']';
+            $tag .= sprintf('[%s:%s:%s]', $_SERVER['REMOTE_ADDR'],
+                            $_SERVER['REMOTE_PORT'], $msec1);
         }
         return $tag;
     }

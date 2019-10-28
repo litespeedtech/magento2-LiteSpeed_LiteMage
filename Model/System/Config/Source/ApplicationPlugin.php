@@ -51,8 +51,9 @@ class ApplicationPlugin
 		elseif (isset($_SERVER['HTTP_X_LITEMAGE']) && $_SERVER['HTTP_X_LITEMAGE']) {
 			return true; // for webadc
 		}
-		else
+		else {
 			return false;
+        }
     }
 
 }

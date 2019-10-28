@@ -12,16 +12,26 @@ class FlushCacheByEvents implements \Magento\Framework\Event\ObserverInterface
 {
 
     /**
-     * @var \Litespeed\Litemage\Model\CacheControl
+     * @var \Litespeed\Litemage\Model\CachePurge
      */
-    protected $litemageCache;
+    protected $litemagePurge;
 
     /**
-     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
+     *
+     * @var \Litespeed\Litemage\Model\Config
      */
-    public function __construct(\Litespeed\Litemage\Model\CacheControl $litemageCache)
+    protected $config;
+    
+    /**
+     * 
+     * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
+     * @param \Litespeed\Litemage\Model\Config $config
+     */
+    public function __construct(\Litespeed\Litemage\Model\CachePurge $litemagePurge,
+            \Litespeed\Litemage\Model\Config $config)
     {
-        $this->litemageCache = $litemageCache;
+        $this->litemagePurge = $litemagePurge;
+        $this->config = $config;
     }
 
     /**
@@ -32,7 +42,7 @@ class FlushCacheByEvents implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-		if (!$this->litemageCache->moduleEnabled())
+		if (!$this->config->moduleEnabled())
 			return;
 
 		$event = $observer->getEvent();
@@ -51,7 +61,7 @@ class FlushCacheByEvents implements \Magento\Framework\Event\ObserverInterface
 				break;
 		}
 		if (!empty($tags)) {
-			$this->litemageCache->addPurgeTags($tags , $msg);
+			$this->litemagePurge->addPurgeTags($tags , $msg);
 		}
     }
 

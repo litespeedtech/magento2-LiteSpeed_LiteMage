@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -28,23 +29,17 @@ class CacheControl
      * Cache related headers only for LiteSpeed Web Server
      */
 
-    const LSHEADER_PURGE = 'X-LiteSpeed-Purge';
-    const LSHEADER_CACHE_CONTROL = 'X-LiteSpeed-Cache-Control';
-    const LSHEADER_CACHE_TAG = 'X-LiteSpeed-Tag';
-    const LSHEADER_CACHE_VARY = 'X-LiteSpeed-Vary';
-    const ENV_VARYCOOKIE_DEFAULT = '_lscache_vary'; // hardcoded by LSWS
-    const LITEMAGE_CUSTVARY_COOKIE = 'litemage-custvary';
+    private const LSHEADER_CACHE_CONTROL = 'X-LiteSpeed-Cache-Control';
+    private const LSHEADER_CACHE_TAG = 'X-LiteSpeed-Tag';
+    private const LSHEADER_CACHE_VARY = 'X-LiteSpeed-Vary';
+    private const ENV_VARYCOOKIE_DEFAULT = '_lscache_vary'; // hardcoded by LSWS
+    private const LITEMAGE_CUSTVARY_COOKIE = 'litemage-custvary';
+    private const LSHEADER_DEBUG_INFO = 'X-LiteMage-Debug-Info';
+    private const LSHEADER_DEBUG_CC = 'X-LiteMage-Debug-CC';
+    private const LSHEADER_DEBUG_VARY = 'X-LiteMage-Debug-Vary';
+    private const LSHEADER_DEBUG_Tag = 'X-LiteMage-Debug-Tag';
 
-    const LSHEADER_DEBUG_INFO = 'X-LiteMage-Debug-Info';
-    const LSHEADER_DEBUG_CC = 'X-LiteMage-Debug-CC';
-    const LSHEADER_DEBUG_VARY = 'X-LiteMage-Debug-Vary';
-    const LSHEADER_DEBUG_Tag = 'X-LiteMage-Debug-Tag';
-    const LSHEADER_DEBUG_Purge = 'X-LiteMage-Debug-Purge';
-
-    protected $_debug = false;
-    protected $_debugTrace = false;
     protected $_bypassedContext = [];
-    protected $_purgeTags = [];
     protected $_cacheTags = [];
     protected $_isCacheable = -1; // -1: not set, 0: No, 1: true
     protected $_isEsiRequest = false;
@@ -55,7 +50,6 @@ class CacheControl
 
     /** @var \Magento\Framework\App\Http\Context */
     protected $httpContext;
-
     protected $request;
 
     /** @var \Magento\Framework\Session\SessionManagerInterface */
@@ -69,9 +63,7 @@ class CacheControl
 
     /** @var \Magento\Store\Model\StoreManagerInterface */
     protected $storeManager;
-
     protected $helper;
-
     protected $rawVaryString; // for debug only
 
     /**
@@ -81,18 +73,18 @@ class CacheControl
      * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
      * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
      * @param \Magento\Framework\App\Request\Http $requObserver/Checkcurrentcountrystore.php
-est,
+      est,
      * @param \Litespeed\Litemage\Model\Config $config,
      * @param \Litespeed\Litemage\Helper\Data $helper
      */
     public function __construct(\Magento\Framework\App\Http\Context $httpContext,
-            \Magento\Framework\Session\SessionManagerInterface $session,
-            \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
-            \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
-            \Magento\Framework\App\Request\Http $request,
-            \Magento\Store\Model\StoreManagerInterface $storeManager,
-            \Litespeed\Litemage\Model\Config $config,
-            \Litespeed\Litemage\Helper\Data $helper
+                                \Magento\Framework\Session\SessionManagerInterface $session,
+                                \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+                                \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
+                                \Magento\Framework\App\Request\Http $request,
+                                \Magento\Store\Model\StoreManagerInterface $storeManager,
+                                \Litespeed\Litemage\Model\Config $config,
+                                \Litespeed\Litemage\Helper\Data $helper
     )
     {
         $this->httpContext = $httpContext;
@@ -106,8 +98,6 @@ est,
         $this->helper = $helper;
         $this->_moduleEnabled = $config->moduleEnabled();
         if ($this->_moduleEnabled) {
-            $this->_debug = $this->config->debugEnabled();
-            $this->_debugTrace = $this->config->debugTraceEnabled();
             $this->_bypassedContext = $this->config->getBypassedContext();
         }
 
@@ -121,7 +111,8 @@ est,
         }
 
         if ($reason) {
-            $fullreason = sprintf("%s CacheControl constructor: %s", $request->getRequestUri(), $reason);
+            $fullreason = sprintf("%s CacheControl constructor: %s",
+                                  $request->getRequestUri(), $reason);
             $this->setNotCacheable($fullreason, $reason);
         }
     }
@@ -131,74 +122,23 @@ est,
         return $this->_moduleEnabled;
     }
 
-    public function debugLog($message)
-    {
-        if ($this->_debug) {
-            $this->helper->debugLog($message);
-        }
-    }
-
-    public function debugTrace($message)
-    {
-        if ($this->_debug && $this->_debugTrace) {
-            ob_start();
-            debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 200);
-            $trace = ob_get_contents();
-            ob_end_clean();
-            $this->helper->debugLog("***** $message *****\n$trace");
-        }
-    }
-
-    public function debugEnabled()
-    {
-        return $this->_debug;
-    }
-
-	public function needPurge()
-	{
-		return ($this->_moduleEnabled && !empty($this->_purgeTags));
-	}
-
-	/**
-	 * Add purgeable tags
-	 * @param array $tags
-	 * @param string $source
-	 *
-	 */
-    public function addPurgeTags($tags, $source)
-    {
-        if (empty($tags)) {
-            return;
-        }
-        $newtags = array_diff($tags, $this->_purgeTags);
-		if (!empty($newtags)) {
-			$this->_purgeTags = array_merge($this->_purgeTags, $newtags);
-    		if ($this->_debug) {
-    			$this->debugLog('add purge tags from '
-					. $source . ' : ' . implode(',', $tags)
-					. ' Result=' . implode(',',$this->_purgeTags) );
-                $this->debugTrace($source);
-            }
-        }
-    }
-
     public function setCacheable($ttl, $msg)
     {
         // cannot set from non cacheable to cacheable
         if ($this->_isCacheable == -1) {
             $this->_isCacheable = 1;
-            $this->debugLog('setCacheable from ' . $msg);
+            $this->helper->setCacheableFlag(1, $msg);
         }
         if ($ttl > 0) {
             $this->_ttl = $ttl;
         }
     }
 
-    public function setNotCacheable($reason, $shortReason='')
+    public function setNotCacheable($reason, $shortReason = '')
     {
         if ($this->_isCacheable != 0) {
             $this->_isCacheable = 0;
-            $this->debugLog('setNotCacheable ' . $reason);
+            $this->helper->setCacheableFlag(0, $reason);
             $this->_nocacheReason = $shortReason ?: $reason;
         }
     }
@@ -208,13 +148,6 @@ est,
         $this->_isEsiRequest = $isEsiReq;
     }
 
-    public function needCustVaryAjax()
-    {
-        if (($this->_isCacheable === 1) && ($this->config->getCustomVaryMode() == 1)) {
-            return true;
-        }
-        return false;
-    }
 
     public function isCacheable()
     {
@@ -237,8 +170,8 @@ est,
         $url = $this->helper->getUrl(
                 'litemage/block/esi',
                 [
-            'b' => $blockName,
-            'h' => $this->encodeEsiHandles($handles)
+                    'b' => $blockName,
+                    'h' => $this->encodeEsiHandles($handles)
                 ]
         );
 
@@ -293,6 +226,13 @@ est,
         $changed = $this->checkCacheVary();
 
         $responsecode = $response->getHttpResponseCode();
+        if ($responsecode == 404) {
+            if (strpos($this->request->getRequestUri(), 'checkout') !== false) {
+                $this->_isCacheable = 0;
+                $this->helper->setCacheableFlag(0, 'CHECKOUT ALERT 404', true);
+            }
+        }
+
         if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable == 1)
         ) {
             // cacheable
@@ -305,23 +245,28 @@ est,
                 $cacheControlHeader .= ',';
             $cacheControlHeader .= 'esi=on';
         }
-        if ($cacheControlHeader) {
-            $response->setHeader(self::LSHEADER_CACHE_CONTROL, $cacheControlHeader);
-            $this->debugLog('SetCacheControlHeaders: ' . $cacheControlHeader . ' Tags:' . $lstags);
 
+        if ($cacheControlHeader) {
+            $response->setHeader(self::LSHEADER_CACHE_CONTROL,
+                                 $cacheControlHeader);
+            $this->helper->debugLog(sprintf('SetCacheControlHeaders: %s Tags: %s',
+                                            $cacheControlHeader, $lstags));
         }
         if ($cch = $response->getHeader('Cache-Control')) {
             if (preg_match('/public.*s-maxage=(\d+)/', $cch->getFieldValue(),
-                            $matches)) {
+                           $matches)) {
                 $maxAge = $matches[1];
                 $response->setNoCacheHeaders();
             }
         }
-        if ($this->_debug == 2) {
+        if ($this->helper->debugEnabled() == 2) {
             // show debug headers
             $response->setHeader(self::LSHEADER_DEBUG_CC, $cacheControlHeader);
             $response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
-            $response->setHeader(self::LSHEADER_DEBUG_INFO, substr(htmlspecialchars(str_replace("\n", ' ', $this->_nocacheReason)), 0, 256));
+            $response->setHeader(self::LSHEADER_DEBUG_INFO,
+                                 substr(htmlspecialchars(str_replace("\n", ' ',
+                                                                     $this->_nocacheReason)),
+                                                                     0, 256));
             $response->setHeader(self::LSHEADER_DEBUG_VARY, $this->rawVaryString);
         }
     }
@@ -330,7 +275,7 @@ est,
     {
         $lstags = '';
         if (!empty($this->_cacheTags)) {
-            $lstags = $this->translateTags($this->_cacheTags);
+            $lstags = $this->helper->translateTags($this->_cacheTags);
             if (is_array($lstags)) {
                 $lstags = implode(',', array_unique($lstags));
             }
@@ -346,14 +291,15 @@ est,
         $rawdata = $varyString = '';
         $varymode = $this->config->getCustomVaryMode();
         if ($varymode == 2) {
-            $this->httpContext->setValue('litemage_custvary_enforce', $varymode, 0);
+            $this->httpContext->setValue('litemage_custvary_enforce', $varymode,
+                                         0);
         }
         if ($varymode) { // 1 or 2
             $curcustvary = $this->request->get(self::LITEMAGE_CUSTVARY_COOKIE);
             if ($curcustvary != $varymode) {
                 $cookMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()->setPath('/')->setHttpOnly(false)->setSecure(false);
                 $this->cookieManager->setPublicCookie(self::LITEMAGE_CUSTVARY_COOKIE,
-                        $varymode, $cookMetadata);
+                                                      $varymode, $cookMetadata);
             }
         }
 
@@ -374,10 +320,11 @@ est,
 
         if (!empty($data) && !empty($this->_bypassedContext)) {
             // already not cacheable, like POST request, do filter
-            $data = array_filter($data, function($k) {
+            $data = array_filter($data,
+                                 function($k) {
                 return (!in_array($k, $this->_bypassedContext));
             }, ARRAY_FILTER_USE_KEY);
-                }
+        }
 
         if (!empty($data)) {
             ksort($data);
@@ -392,49 +339,31 @@ est,
             if ($varyString) {
                 $sensitiveCookMetadata = $this->cookieMetadataFactory->createSensitiveCookieMetadata()->setPath('/');
                 $this->cookieManager->setSensitiveCookie(self::ENV_VARYCOOKIE_DEFAULT,
-                        $varyString, $sensitiveCookMetadata);
+                                                         $varyString,
+                                                         $sensitiveCookMetadata);
             } else {
                 $cookieMetadata = $this->cookieMetadataFactory->createSensitiveCookieMetadata()->setPath('/');
                 $this->cookieManager->deleteCookie(self::ENV_VARYCOOKIE_DEFAULT,
-                        $cookieMetadata);
+                                                   $cookieMetadata);
             }
             $changed = true;
-            $rawdata .=  ' changed';
+            $rawdata .= ' changed';
             $this->setNotCacheable("EnvVary $rawdata");
         }
 
-        if ($this->_debug && $rawdata) {
-            $this->debugLog("EnvVary: $rawdata");
+        if ($rawdata) {
+            $this->helper->debugLog("EnvVary: $rawdata");
         }
         $this->rawVaryString = $rawdata;
         return $changed;
-    }
-
-    public function setPurgeHeaders($response)
-    {
-        if (empty($this->_purgeTags))
-			return;
-
-		if (in_array('*', $this->_purgeTags)) {
-			$purgeTags = '*';
-		} else {
-			$purgeTags = 'tag=' . implode(',tag=', array_unique($this->translateTags($this->_purgeTags)));
-		}
-		$response->setHeader(self::LSHEADER_PURGE, $purgeTags);
-        if ($this->_debug) {
-            $this->debugLog('Set purge header ' . $purgeTags);
-            if ($this->_debug == 2) {
-                $response->setHeader(self::LSHEADER_DEBUG_Purge, $purgeTags);
-            }
-        }
     }
 
     public function addCacheTags($tags)
     {
         if (is_array($tags)) {
             $this->_cacheTags = array_unique(array_merge($this->_cacheTags,
-                            $tags));
-        } else if ($tags && !in_array($tags, $this->_cacheTags)) {
+                                                         $tags));
+        } elseif ($tags && !in_array($tags, $this->_cacheTags)) {
             $this->_cacheTags[] = $tags;
         }
     }
@@ -444,28 +373,7 @@ est,
         $this->_cacheTags = $tags;
     }
 
-	/**
-	 * translateTags
-	 * @param string or array of strings $tagString
-	 * @return string or array
-	 */
-    // input can be array or string
-	public function translateTags($tagString)
-    {
-		$search = ['_block',
-			'catalog_product_',
-			'catalog_product',
-			'catalog_category_product_', // sequence matters, need to be in front of shorter ones
-			'catalog_category_' ];
-		$replace = ['.B', 'P.', 'P', 'C.', 'C.'];
-
-        $lstags = str_replace($search, $replace, $tagString);
-
-		//$this->debugLog("in translate tags from = $tagString , to = $lstags");
-        return $lstags;
-    }
-
-	// used by ESI blocks
+    // used by ESI blocks
     public function getElementCacheTags($layout, $elementName)
     {
         if (!$layout->hasElement($elementName))
@@ -500,12 +408,12 @@ est,
                 }
             }
         }
-		if (!empty($tags)) {
-			$lstag = implode(',', array_unique($this->translateTags($tags)));
-		}
-		else {
+        if (!empty($tags)) {
+            $lstag = implode(',',
+                             array_unique($this->helper->translateTags($tags)));
+        } else {
             $lstag = $elementName;
-		}
+        }
         return $lstag;
     }
 

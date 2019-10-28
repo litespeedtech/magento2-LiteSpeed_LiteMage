@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -13,10 +14,13 @@ namespace Litespeed\Litemage\Logger;
  */
 class Logger extends \Monolog\Logger
 {
-	public function __construct($name, array $handlers = [], array $processors = [])
+
+    public function __construct($name, array $handlers = [],
+                                array $processors = [])
     {
         $this->name = $name;
         $this->handlers = $handlers;
         $this->processors = $processors;
     }
+
 }

@@ -15,9 +15,9 @@ class LitemagePlugin
 {
 
     /**
-     * @var \Litespeed\Litemage\Model\CacheControl
+     * @var \Litespeed\Litemage\Model\Config
      */
-    protected $litemageCache;
+    protected $config;
 
     /**
      * @var \Magento\Framework\App\PageCache\Version
@@ -30,18 +30,18 @@ class LitemagePlugin
     protected $registry;
 
     /**
-     * Constructor
-     *
-     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
+     * 
+     * @param \Litespeed\Litemage\Model\Config $config
      * @param \Magento\Framework\App\PageCache\Version $version
+     * @param \Magento\Framework\Registry $registry
      */
     public function __construct(
-        \Litespeed\Litemage\Model\CacheControl $litemageCache,
+        \Litespeed\Litemage\Model\Config $config,
         \Magento\Framework\App\PageCache\Version $version,
         \Magento\Framework\Registry $registry
     )
     {
-        $this->litemageCache = $litemageCache;
+        $this->config = $config;
         $this->version = $version;
         $this->registry = $registry;
     }
@@ -61,7 +61,7 @@ class LitemagePlugin
     {
         $result = $proceed($response);
         $usePlugin = $this->registry->registry('use_page_cache_plugin');
-        if ($usePlugin && $this->litemageCache->moduleEnabled()) {
+        if ($usePlugin && $this->config->moduleEnabled()) {
             $this->version->process();
         }
         return $result;

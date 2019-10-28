@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -10,6 +11,7 @@ namespace Litespeed\Litemage\Controller\Block;
 
 class CustomVary extends \Magento\Framework\App\Action\Action
 {
+
     /** @var  \Magento\Framework\Controller\Result\JsonFactory */
     protected $jsonFactory;
 
@@ -17,7 +19,6 @@ class CustomVary extends \Magento\Framework\App\Action\Action
      * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
-
 
     /**
      * @param \Magento\Framework\App\Action\Context $context
@@ -28,7 +29,8 @@ class CustomVary extends \Magento\Framework\App\Action\Action
             \Magento\Framework\App\Action\Context $context,
             \Magento\Framework\Controller\Result\JsonFactory $jsonFactory,
             \Litespeed\Litemage\Model\CacheControl $litemageCache
-    ) {
+    )
+    {
         parent::__construct($context);
         $this->jsonFactory = $jsonFactory;
         $this->litemageCache = $litemageCache;

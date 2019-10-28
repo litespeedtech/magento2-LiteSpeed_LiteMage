@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -9,7 +10,7 @@
 namespace Litespeed\Litemage\Model\System\Config\Source;
 
 /**
- * Class CustomerGroup
+ * Class CustomVary
  *
  */
 class CustomVary implements \Magento\Framework\Option\ArrayInterface

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -15,18 +16,25 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
      * @var \Litespeed\Litemage\Model\CacheControl
      */
     protected $litemageCache;
-    protected $_injectBlocks = [];
 
     /**
-     * Class constructor
-     *
+     * @var \Litespeed\Litemage\Helper\Data
+     */
+    protected $helper;
+    private $_injectBlocks = [];
+
+    /**
+     * 
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
+     * @param \Litespeed\Litemage\Helper\Data $helper
      */
     public function __construct(
-    \Litespeed\Litemage\Model\CacheControl $litemageCache
+            \Litespeed\Litemage\Model\CacheControl $litemageCache,
+            \Litespeed\Litemage\Helper\Data $helper
     )
     {
         $this->litemageCache = $litemageCache;
+        $this->helper = $helper;
         //$this->_injectBlocks = ['footer'];
     }
 
@@ -37,8 +45,9 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
      * @param \Magento\Framework\View\Layout $layout
      * @return string
      */
-    protected function _replaceEsi(
-    $blockName, \Magento\Framework\View\Layout $layout, $transport)
+    protected function _replaceEsi($blockName,
+                                   \Magento\Framework\View\Layout $layout,
+                                   $transport)
     {
         $handles = $layout->getUpdate()->getHandles();
         $url = $this->litemageCache->getEsiUrl($handles, $blockName);
@@ -55,8 +64,8 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
         $this->litemageCache->setEsiOn(true);
         $output = $uri; // discard original output
 
-        if ($this->litemageCache->debugEnabled()) {
-            $this->litemageCache->debugLog('replace esi ; ' . $uri);
+        if ($this->helper->debugEnabled()) {
+            $this->helper->debugLog('replace esi ; ' . $uri);
             $output = '<!--litemage_esi start ' . $blockName . '-->' . $uri . '<!-- litemage_esi end -->';
         }
         $transport->setData('output', $output);

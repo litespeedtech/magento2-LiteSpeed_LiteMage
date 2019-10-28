@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -13,28 +14,28 @@ namespace Litespeed\Litemage\Model\App\FrontController;
  */
 class LitemagePlugin
 {
+
     /**
-     * @var \Litespeed\Litemage\Model\CacheControl
+     * @var \Litespeed\Litemage\Helper\Data
      */
-    protected $litemageCache;
+    protected $helper;
 
     /**
      * @var \Magento\Framework\App\PageCache\Version
      */
     protected $version;
 
-
     /**
-     * Constructor
-     *
-     * @param \Litespeed\Litemage\Model\Config $config
+     * 
+     * @param \Litespeed\Litemage\Helper\Data $helper
      * @param \Magento\Framework\App\PageCache\Version $version
      */
     public function __construct(
-        \Litespeed\Litemage\Model\CacheControl $litemageCache,
-        \Magento\Framework\App\PageCache\Version $version
-    ) {
-        $this->litemageCache = $litemageCache;
+            \Litespeed\Litemage\Helper\Data $helper,
+            \Magento\Framework\App\PageCache\Version $version
+    )
+    {
+        $this->helper = $helper;
         $this->version = $version;
     }
 
@@ -46,14 +47,20 @@ class LitemagePlugin
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function aroundDispatch(
-        \Magento\Framework\App\FrontControllerInterface $subject,
-        \Closure $proceed,
-        \Magento\Framework\App\RequestInterface $request
-    ) {
-        $this->litemageCache->debugLog('aroundDispatch0 ' . $request->getMethod() . ' '. $request->getUriString());
+            \Magento\Framework\App\FrontControllerInterface $subject,
+            \Closure $proceed, \Magento\Framework\App\RequestInterface $request
+    )
+    {
         $response = $proceed($request);
-        $this->litemageCache->debugLog('aroundDispatch1 FrontController ' . $request->getModuleName() . ':' . $request->getActionName() . ' cacheable=' . (int)$this->litemageCache->isCacheable());
-        if ($this->litemageCache->moduleEnabled() && $response instanceof \Magento\Framework\App\Response\Http) {
+        if ($this->helper->debugEnabled()) {
+            $this->helper->debugLog(sprintf('after aroundDispatch %s %s [%s:%s] cacheable=%s',
+                                            $request->getMethod(),
+                                            $request->getUriString(),
+                                            $request->getModuleName(),
+                                            $request->getActionName(),
+                                            $this->helper->isCacheable() ? '1' : '0'));
+        }
+        if ($this->helper->moduleEnabled() && $response instanceof \Magento\Framework\App\Response\Http) {
             $this->version->process();
         }
         return $response;

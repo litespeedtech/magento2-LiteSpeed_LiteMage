@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -15,19 +16,20 @@ class HttpPurgePlugin
 {
 
     /**
-     * @var \Litespeed\Litemage\Model\CacheControl
+     * @var \Litespeed\Litemage\Model\CachePurge
      */
-    protected $litemageCache;
+    protected $litemagePurge;
 
     /**
      * Constructor
      *
-     * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
+     * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
      */
     public function __construct(
-        \Litespeed\Litemage\Model\CacheControl $litemageCache
-    ) {
-        $this->litemageCache = $litemageCache;
+            \Litespeed\Litemage\Model\CachePurge $litemagePurge
+    )
+    {
+        $this->litemagePurge = $litemagePurge;
     }
 
     /**
@@ -38,8 +40,8 @@ class HttpPurgePlugin
      */
     public function beforeSendResponse(\Magento\Framework\App\Response\Http $subject)
     {
-        if ($this->litemageCache->needPurge()) {
-            $this->litemageCache->setPurgeHeaders($subject);
+        if ($this->litemagePurge->needPurge()) {
+            $this->litemagePurge->setPurgeHeaders($subject);
         }
     }
 

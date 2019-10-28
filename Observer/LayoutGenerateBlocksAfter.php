@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -34,22 +35,25 @@ class LayoutGenerateBlocksAfter implements \Magento\Framework\Event\ObserverInte
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if ($this->litemageCache->maybeCacheable()) {
-            $layout = $observer->getEvent()->getLayout();
-            $msg = 'Observer LayoutGenerateBlocksAfter';
-            if ($layout->isCacheable()) {
-                // only now, as maybe multiple layout
-                $this->litemageCache->setCacheable(null, $msg);
-            } else {
-                $blocks = $layout->getUpdate()->asSimplexml()->xpath('//' . \Magento\Framework\View\Layout\Element::TYPE_BLOCK . '[@cacheable="false"]');
-                $str = print_r($blocks, 1);
-                $shortmsg = 'Layout has uncacheable blocks ';
-                if (preg_match_all('/\[name\] => ([^\s]+)/', $str, $m)) {
-                    $shortmsg .= implode(', ', $m[1]);
-                }
-                $msg .= ' Blocks not cacheable ' . $str;
-                $this->litemageCache->setNotCacheable($msg, $shortmsg);
+        if (!$this->litemageCache->maybeCacheable()) {
+            return;
+        }
+        $layout = $observer->getEvent()->getLayout();
+        $msg = 'Observer LayoutGenerateBlocksAfter';
+        if ($layout->isCacheable()) {
+            // only now, as maybe multiple layout
+            $this->litemageCache->setCacheable(null, $msg);
+        } else {
+            // not cacheable by layout, find out which blocks caused that for trouble shooting
+            $nocache = '//' . \Magento\Framework\View\Layout\Element::TYPE_BLOCK . '[@cacheable="false"]';
+            $blocks = $layout->getUpdate()->asSimplexml()->xpath($nocache);
+            $str = print_r($blocks, 1);
+            $shortmsg = 'Layout has uncacheable blocks ';
+            if (preg_match_all('/\[name\] => ([^\s]+)/', $str, $m)) {
+                $shortmsg .= implode(', ', $m[1]);
             }
+            $msg .= ' Blocks not cacheable ' . $str;
+            $this->litemageCache->setNotCacheable($msg, $shortmsg);
         }
     }
 

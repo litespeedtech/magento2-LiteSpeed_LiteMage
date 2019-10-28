@@ -9,7 +9,7 @@
 namespace Litespeed\Litemage\Model\System\Config\Source;
 
 /**
- * Class CustomerGroup
+ * Class EnableDebug
  *
  */
 class EnableDebug implements \Magento\Framework\Option\ArrayInterface

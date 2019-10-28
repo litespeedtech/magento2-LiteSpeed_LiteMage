@@ -1,4 +1,5 @@
 <?php
+
 /**
  * LiteMage
  * @package   LiteSpeed_LiteMage
@@ -10,6 +11,7 @@ namespace Litespeed\Litemage\Observer;
 
 class FlushCacheByTags implements \Magento\Framework\Event\ObserverInterface
 {
+
     /**
      * @var \Litespeed\Litemage\Model\Config
      */
@@ -20,13 +22,13 @@ class FlushCacheByTags implements \Magento\Framework\Event\ObserverInterface
 
     /**
      * @param \Litespeed\Litemage\Model\Config $config,
-	 * @param \Magento\Framework\Event\ManagerInterface $eventManager,
+     * @param \Magento\Framework\Event\ManagerInterface $eventManager,
      */
     public function __construct(\Litespeed\Litemage\Model\Config $config,
-			\Magento\Framework\Event\ManagerInterface $eventManager)
+                                \Magento\Framework\Event\ManagerInterface $eventManager)
     {
         $this->config = $config;
-		$this->eventManager = $eventManager;
+        $this->eventManager = $eventManager;
     }
 
     /**
@@ -37,27 +39,27 @@ class FlushCacheByTags implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-		$rawtags = [];
-		$object = $observer->getEvent()->getObject();
-		if ($object instanceof \Magento\Framework\DataObject\IdentityInterface) {
-			$rawtags = $object->getIdentities();
-		}
+        $rawtags = [];
+        $object = $observer->getEvent()->getObject();
+        if ($object instanceof \Magento\Framework\DataObject\IdentityInterface) {
+            $rawtags = $object->getIdentities();
+        }
 
-		if (empty($rawtags) || !$this->config->moduleEnabled()) {
-			return;
-		}
+        if (empty($rawtags) || !$this->config->moduleEnabled()) {
+            return;
+        }
 
-        $reason = 'FlushCacheByTags from ' . $observer->getEvent()->getName(). ' ' . implode(',', $rawtags);
-		$param = ['tags' => $rawtags, 'reason' => $reason];
+        $reason = sprintf('FlushCacheByTags from %s %s',
+                          $observer->getEvent()->getName(),
+                          implode(',', $rawtags));
+        $param = ['tags' => $rawtags, 'reason' => $reason];
 
-		if (PHP_SAPI == 'cli') {
-			// from command line
-			$this->eventManager->dispatch('litemage_cli_purge', $param);
-		}
-		else {
-			$this->eventManager->dispatch('litemage_purge', $param);
+        if (PHP_SAPI == 'cli') {
+            // from command line
+            $this->eventManager->dispatch('litemage_cli_purge', $param);
+        } else {
+            $this->eventManager->dispatch('litemage_purge', $param);
         }
     }
-
 
 }
