@@ -96,8 +96,7 @@ class CachePurge
         if ($this->_isPurgeAll) {
             $purgeTags = '*';
         } else {
-            $purgeTags = 'tag=' . implode(',tag=',
-                                          array_unique($this->helper->translateTags($this->_purgeTags)));
+            $purgeTags = 'tag=' . implode(',tag=', $this->helper->translateFilterTags($this->_purgeTags));
         }
         $response->setHeader(self::LSHEADER_PURGE, $purgeTags);
         if ($this->_debug) {

@@ -52,10 +52,10 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
         $handles = $layout->getUpdate()->getHandles();
         $url = $this->litemageCache->getEsiUrl($handles, $blockName);
 
-        $cacheTags = $this->litemageCache->getElementCacheTags($layout,
-                                                               $blockName);
-        if ($cacheTags) {
-            $cacheTags = ' cache-tag="' . $cacheTags . '"';
+        $cacheTags = '';
+        $tags = $this->litemageCache->getElementCacheTags($layout, $blockName);
+        if (!empty($tags)) {
+            $cacheTags = ' cache-tag="' . implode(',', $tags) . '"';
         }
 
         $uri = sprintf('<esi:include src="%s"%s cache-control="public"/>', $url,

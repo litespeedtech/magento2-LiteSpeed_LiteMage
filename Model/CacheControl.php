@@ -275,10 +275,7 @@ class CacheControl
     {
         $lstags = '';
         if (!empty($this->_cacheTags)) {
-            $lstags = $this->helper->translateTags($this->_cacheTags);
-            if (is_array($lstags)) {
-                $lstags = implode(',', array_unique($lstags));
-            }
+            $lstags = implode(',', $this->helper->translateFilterTags($this->_cacheTags));
             $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
             $response->clearHeader('X-Magento-Tags');
         }
@@ -309,7 +306,7 @@ class CacheControl
         $currentStore = $this->storeManager->getStore();
         $defaultStore = $this->storeManager->getWebsite()->getDefaultStore();
         if ($currentStore->getCode() != $defaultStore->getCode()) {
-            $data[StoreManagerInterface::CONTEXT_STORE] = $currentStore;
+            $data[StoreManagerInterface::CONTEXT_STORE] = $currentStore->getCode();
         }
 
         $currentCurrency = $this->session->getCurrencyCode() ?: $currentStore->getDefaultCurrencyCode();
@@ -370,7 +367,11 @@ class CacheControl
 
     public function setCacheTags($tags)
     {
-        $this->_cacheTags = $tags;
+        if (!is_array($tags)) {
+            $this->_cacheTags = [$tags];
+        } else {
+            $this->_cacheTags = $tags;
+        }
     }
 
     // used by ESI blocks
@@ -408,13 +409,10 @@ class CacheControl
                 }
             }
         }
-        if (!empty($tags)) {
-            $lstag = implode(',',
-                             array_unique($this->helper->translateTags($tags)));
-        } else {
-            $lstag = $elementName;
+        if (empty($tags)) {
+            $tags[] = $elementName;
         }
-        return $lstag;
+        return $this->helper->translateFilterTags($tags);
     }
 
 }

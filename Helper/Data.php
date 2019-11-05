@@ -114,26 +114,39 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
 
     /**
      * translateTags
-     * @param string or array of strings $tagString
+     * @param array of string $tags
      * @return string or array
      */
     // input can be array or string
-    public function translateTags($tagString)
+    public function translateFilterTags($tags)
     {
-        $search = ['block', 'footer_links', 'left-menu',
-            'cms_b',
-            'cat_p',
-            'cat_c_p', // sequence matters, need to be in front of shorter ones
-            'cat_c'];
-        $replace = ['B', 'f', 'l',
-            'MB',
-            'P',
-            'C', 'C'];
+        $lstags = [];
+        if (!empty($tags)) {
+            $search = ['block', 'left-menu',
+                'cms_b', 'cat_p',
+                'cat_c_p', // sequence matters, need to be in front of shorter ones
+                'cat_c'];
+            $replace = ['B', 'l',
+                'MB', 'P',
+                'C', 'C'];
 
-        $lstags = str_replace($search, $replace, $tagString);
+            $footer = false;
+            foreach ($tags as $tag) {
+                if (strpos($tag, 'footer') !== false) {
+                    $footer = true;
+                } else {
+                    $lstags[] = str_replace($search, $replace, $tag);
+                }
+            }
+            if ($footer) {
+                $lstags[] = 'F';
+            }
 
-        /* $this->debugLog("in translate tags from = " . print_r($tagString, 1) 
-          . ' to = ' . print_r($lstags,1)); */
+            $lstags = array_unique($lstags);
+        }
+
+//        $this->debugLog("in translate tags from = " . print_r($tags, 1) 
+//          . ' to = ' . print_r($lstags,1)); 
         return $lstags;
     }
 

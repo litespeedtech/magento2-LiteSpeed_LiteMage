@@ -52,15 +52,15 @@ class LitemagePlugin
     )
     {
         $response = $proceed($request);
-        if ($this->helper->debugEnabled()) {
-            $this->helper->debugLog(sprintf('after aroundDispatch %s %s [%s:%s] cacheable=%s',
-                                            $request->getMethod(),
-                                            $request->getUriString(),
-                                            $request->getModuleName(),
-                                            $request->getActionName(),
-                                            $this->helper->isCacheable() ? '1' : '0'));
-        }
-        if ($this->helper->moduleEnabled() && $response instanceof \Magento\Framework\App\Response\Http) {
+        if ($response instanceof \Magento\Framework\App\Response\Http && $this->helper->moduleEnabled()) {
+            if ($this->helper->debugEnabled()) {
+                $this->helper->debugLog(sprintf('after aroundDispatch %s %s [%s:%s] cacheable=%s',
+                                                $request->getMethod(),
+                                                $request->getUriString(),
+                                                $request->getModuleName(),
+                                                $request->getActionName(),
+                                                $this->helper->isCacheable() ? '1' : '0'));
+            }
             $this->version->process();
         }
         return $response;
