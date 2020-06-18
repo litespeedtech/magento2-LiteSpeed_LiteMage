@@ -70,7 +70,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 200);
             $trace = ob_get_contents();
             ob_end_clean();
-            $this->log("***** $message *****\n$trace");
+            $uri = isset($_SERVER['REQUEST_URI']) ?
+                    substr($_SERVER['REQUEST_URI'], 0, 80) : '';
+            $from = sprintf('FROM %s %s %s', $this->_request->getModuleName(),
+                            $this->_request->getActionName(), $uri);
+            $this->log("***** $message *****\n$trace\n$from");
         }
     }
 
@@ -122,13 +126,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         $lstags = [];
         if (!empty($tags)) {
-            $search = ['block', 'left-menu',
-                'cms_b', 'cat_p',
-                'cat_c_p', // sequence matters, need to be in front of shorter ones
-                'cat_c'];
-            $replace = ['B', 'l',
-                'MB', 'P',
-                'C', 'C'];
+            // sequence matters, need to be in front of shorter ones
+            $search = ['block', 'left-menu', 'cms_b', 'cat_p', 'cat_c_p', 'cat_c'];
+            $replace = ['B', 'l', 'MB', 'P', 'C', 'C'];
 
             $footer = false;
             foreach ($tags as $tag) {

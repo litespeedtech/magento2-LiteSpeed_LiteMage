@@ -39,13 +39,20 @@ class FlushCacheByTags implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
+        if (!$this->config->moduleEnabled()) {
+            return;
+        }
+        
         $rawtags = [];
         $object = $observer->getEvent()->getObject();
         if ($object instanceof \Magento\Framework\DataObject\IdentityInterface) {
             $rawtags = $object->getIdentities();
+            if (!empty($rawtags)) {
+                $rawtags = $this->config->filterPurgeTags($rawtags);
+            }
         }
 
-        if (empty($rawtags) || !$this->config->moduleEnabled()) {
+        if (empty($rawtags)) {
             return;
         }
 

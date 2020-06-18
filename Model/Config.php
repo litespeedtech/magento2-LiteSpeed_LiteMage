@@ -140,9 +140,15 @@ class Config
         $translator = [
             'default' => '-',
             'catalog_product_view' => 'LPV',
+            'catalog_product_view_type_configurable' => 'LPVTC',
             'catalog_category_view' => 'LCV',
+            'catalog_category_view_type_default' => 'LCVTD',
             'catalog_category_view_type_layered' => 'LCVTL',
-            'cms_page_view' => 'MPV'
+            'catalog_category_view_type_layered_without_children' => 'LCVTLOC',
+            'cms_page_view' => 'MPV',
+            'cms_index_index_id_home' => 'MIIIH',
+            'cms_noroute_index' => 'MNI',
+            'cms_noroute_index_id_no-route' => 'MNIINR',
         ];
         return $translator;
     }
@@ -156,6 +162,25 @@ class Config
             'catalog_category_view_id_'
         ];
         return $ignored;
+    }
+    
+    public function filterPurgeTags($rawtags)
+    {
+        // can make it configurable in future. these tags will never has a cache tag, waste to store for purge tags.
+        $ignored = [
+            'compare_item',
+            'wishlist',
+        ];
+        $tags = [];
+        foreach ($rawtags as $tag) {
+            foreach ($ignored as $i) {
+                if (strpos($tag, $i) !== false) {
+                    continue 2;
+                }
+            }
+            $tags[] = $tag;
+        }
+        return $tags;
     }
 
     public function esiTag($type)
