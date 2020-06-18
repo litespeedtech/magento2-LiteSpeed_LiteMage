@@ -63,7 +63,10 @@ class CacheControl
 
     /** @var \Magento\Store\Model\StoreManagerInterface */
     protected $storeManager;
+    
+    /** @var \Litespeed\Litemage\Helper\Data */
     protected $helper;
+    
     protected $rawVaryString; // for debug only
 
     /**
@@ -106,8 +109,16 @@ class CacheControl
             $reason = 'module disabled';
         } elseif (!$request->isGet() && !$request->isHead()) {
             $reason = $request->getMethod();
-        } elseif ($request->isAjax() && $request->getQuery('_')) {
-            $reason = 'ajax with random string';
+        } elseif ($request->isAjax()) {
+            if ($request->getQuery('_')) {
+                $reason = 'ajax with random string';
+            } elseif ('true' === $request->getQuery('force_new_section_timestamp')) {
+                $reason = 'ajax with force_new_section_timestamp';
+            }
+        }
+        // check if private info
+        if (!$reason && $request->getControllerModule() == 'Magento_Customer') {
+            $reason = 'Customer Private Data';
         }
 
         if ($reason) {
@@ -122,6 +133,11 @@ class CacheControl
         return $this->_moduleEnabled;
     }
 
+    public function debugEnabled()
+    {
+        return $this->helper->debugEnabled();
+    }
+    
     public function setCacheable($ttl, $msg)
     {
         // cannot set from non cacheable to cacheable
@@ -218,7 +234,7 @@ class CacheControl
     {
         $this->_hasESI = $isOn;
     }
-
+    
     public function setCacheControlHeaders($response)
     {
         $cacheControlHeader = '';
@@ -232,7 +248,7 @@ class CacheControl
                 $this->helper->setCacheableFlag(0, 'CHECKOUT ALERT 404', true);
             }
         }
-
+        
         if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable == 1)
         ) {
             // cacheable
@@ -249,8 +265,10 @@ class CacheControl
         if ($cacheControlHeader) {
             $response->setHeader(self::LSHEADER_CACHE_CONTROL,
                                  $cacheControlHeader);
-            $this->helper->debugLog(sprintf('SetCacheControlHeaders: %s Tags: %s',
-                                            $cacheControlHeader, $lstags));
+            $this->helper->debugLog(sprintf('SetCacheControlHeaders: %s %s Tags: %s',
+                                            $cacheControlHeader,
+                                            $this->request->getRequestUri(),
+                                            $lstags));
         }
         if ($cch = $response->getHeader('Cache-Control')) {
             if (preg_match('/public.*s-maxage=(\d+)/', $cch->getFieldValue(),
@@ -281,7 +299,7 @@ class CacheControl
         }
         return $lstags;
     }
-
+    
     public function checkCacheVary()
     {
         // check custvary first
@@ -346,6 +364,10 @@ class CacheControl
             $changed = true;
             $rawdata .= ' changed';
             $this->setNotCacheable("EnvVary $rawdata");
+        } else {
+            // check vary value
+            // $ov = isset($_SERVER['LSCACHE_VARY_VALUE']) ? $_SERVER['LSCACHE_VARY_VALUE'] : '';
+
         }
 
         if ($rawdata) {
