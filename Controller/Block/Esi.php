@@ -9,6 +9,9 @@
 
 namespace Litespeed\Litemage\Controller\Block;
 
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Phrase;
+
 class Esi extends \Magento\Framework\App\Action\Action
 {
 
@@ -45,48 +48,64 @@ class Esi extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
-        $this->litemageCache->setEsiRequest();
-
-        if ($layout = $this->_prepareLayout($block)) {
-            $response = $this->getResponse();
-            $ttl = 86400;
-            $html = $layout->renderElement($block);
-            if ($tags = $this->litemageCache->getElementCacheTags($layout,
-                                                                  $block)) {
-                $this->litemageCache->setCacheTags($tags);
-            }
-
-            $this->translateInline->processResponseBody($html);
-            $response->appendBody($html);
-            $response->setPublicHeaders($ttl);
-        }
-    }
-
-    /**
-     * Get blocks from layout by handles
-     *
-     * @return array [\Element\BlockInterface]
-     */
-    protected function _prepareLayout(&$block)
-    {
-        $request = $this->getRequest();
-
+        $request = $this->getEsiRequest();
+        
         $block = $request->getParam('b');
         $handle = $request->getParam('h');
 
-        if (!$handle || !$block) {
-            return null;
+        if ($handle && $block) {
+            $this->sendBlockContent($handle, $block);
         }
+    }
+    
+    protected function sendBlockContent($handle, $block)
+    {
         $handles = $this->litemageCache->decodeEsiHandles($handle);
 
         $this->_view->loadLayout($handles, true, true, false);
 
         $layout = $this->_view->getLayout();
 
-        if ($layout->hasElement($block)) {
-            return $layout;
+        if (!$layout->hasElement($block)) {
+            return;
         }
-        return null;
+        
+        $response = $this->getResponse();
+        $ttl = 86400;
+        $html = $layout->renderElement($block);
+        if ($tags = $this->litemageCache->getElementCacheTags($layout, $block)) {
+            $this->litemageCache->setCacheTags($tags);
+        }
+
+        $this->translateInline->processResponseBody($html);
+        $response->appendBody($html);
+        $response->setPublicHeaders($ttl);
     }
 
+	protected function getEsiRequest()
+	{
+        $request = $this->getRequest();
+        
+        $origEsiUrl = $_SERVER['REQUEST_URI'] ;
+		// for lsws
+		$refererUrl = $request->getServer('ESI_REFERER');
+		if (!$refererUrl) {
+			//lslb
+			$refererUrl = $request->getServer('HTTP_ESI_REFERER');
+		}
+
+		if ( $refererUrl ) {
+            /** may set original host url later if needed
+			$_SERVER['REQUEST_URI'] = $refererUrl ;
+			$request->setRequestUri($refererUrl) ;
+			$request->setPathInfo() ; */
+		} else {
+            throw new LocalizedException(
+                    new Phrase('Illegal ESI entrace "%1"', [$origEsiUrl]));
+        }
+
+        $this->litemageCache->setEsiRequest();
+        return $request;
+	}    
+    
 }
