@@ -86,7 +86,7 @@ class Management extends \Magento\Backend\Block\Template
             $client->setOption(CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1); // need to force http1.1
             $client->get($statUri);
             $data = trim($client->getBody());
-            if ($data == '' || $data{0} !== '{') {
+            if ($data == '' || substr($data, 0, 1) !== '{') {
                 return null;
             }
 
