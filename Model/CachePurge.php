@@ -94,10 +94,26 @@ class CachePurge
             return;
 
         if ($this->_isPurgeAll) {
-            $purgeTags = '*';
-        } else {
-            $purgeTags = 'tag=' . implode(',tag=', $this->helper->translateFilterTags($this->_purgeTags));
+            $this->setRealPurgeHeaders($response, '*');
+            return;
+        } 
+        
+        $tags = $this->helper->translateFilterTags($this->_purgeTags);
+        // if contains big list, split to multi-headers
+        while (count($tags) > 500) {
+            $tag1 = array_slice($tags, 0, 500);
+            $purgeTags = 'tag=' . implode(',tag=', $tags1);
+            $this->setRealPurgeHeaders($response, $purgeTags);
+            $tags = array_slice($tags, 500);
         }
+        if (count($tags) > 0)  {
+            $purgeTags = 'tag=' . implode(',tag=', $tags1);
+            $this->setRealPurgeHeaders($response, $purgeTags);
+        }
+    }
+
+    protected function setRealPurgeHeaders($response, $purgeTags)
+    {
         $response->setHeader(self::LSHEADER_PURGE, $purgeTags);
         if ($this->_debug) {
             $this->helper->debugLog('Set purge header ' . $purgeTags);
