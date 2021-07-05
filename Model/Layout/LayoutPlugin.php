@@ -39,9 +39,9 @@ class LayoutPlugin
     public function afterGetOutput(\Magento\Framework\View\Layout $subject, $result)
     {
         if ($this->litemageCache->isCacheable()) {
-            foreach ($subject->getAllBlocks() as $block) {
+            foreach ($subject->getAllBlocks() as $name => $block) {
                 if (!$block->getData('litemage_esi') && ($block instanceof \Magento\Framework\DataObject\IdentityInterface)) {
-                    $this->litemageCache->addCacheTags($block->getIdentities());
+                    $this->litemageCache->addCacheTagsFromIdentityBlock($name, $block);
                 }
             }
         }

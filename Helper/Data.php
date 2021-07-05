@@ -19,7 +19,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $_debugTrace = false;
     protected $_isCacheable = -1; // sync with CacheControl var
     protected $config;
-
+    
     /**
      * 
      * @param \Magento\Framework\App\Helper\Context $context
@@ -115,7 +115,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             }
         }
     }
-
+    
     /**
      * translateTags
      * @param array of string $tags
@@ -127,15 +127,16 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $lstags = [];
         if (!empty($tags)) {
             // sequence matters, need to be in front of shorter ones
-            $search = ['block', 'left-menu', 'cms_b', 'cat_p', 'cat_c_p', 'cat_c'];
-            $replace = ['B', 'l', 'MB', 'P', 'C', 'C'];
+            $search = ['block', 'left-menu', 'cms_b', 'cat_p_', 'cat_p', 'cat_c_p', 'cat_c'];
+            $replace = ['B', 'l', 'MB', 'P', 'P', 'C', 'C'];
 
             $footer = false;
             foreach ($tags as $tag) {
                 if (strpos($tag, 'footer') !== false) {
                     $footer = true;
                 } else {
-                    $lstags[] = str_replace($search, $replace, $tag);
+                    $tag1 = str_replace($search, $replace, $tag);
+                    $lstags[] = $tag1;
                 }
             }
             if ($footer) {

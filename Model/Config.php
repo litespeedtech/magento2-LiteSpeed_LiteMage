@@ -26,6 +26,8 @@ class Config
     private const CFG_DEBUGON = 'debug' ;
     private const CFG_CONTEXTBYPASS = 'contextbypass';
     private const CFG_CUSTOMVARY = 'custom_vary';
+    private const CFG_IGNORED_BLOCKS = 'ignored_blocks';
+    private const CFG_IGNORED_TAGS = 'ignored_tags';
     //const CFG_ADMINIPS = 'admin_ips';
     private const CFG_PUBLICTTL = 'public_ttl';
     private const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
@@ -209,6 +211,16 @@ class Config
         return $this->getConf(self::CFG_CONTEXTBYPASS);
     }
 
+    public function getIgnoredTags()
+    {
+        return $this->getConf(self::CFG_IGNORED_TAGS);
+    }
+
+    public function getIgnoredBlocks()
+    {
+        return $this->getConf(self::CFG_IGNORED_BLOCKS);
+    }
+
     public function getCustomVaryMode()
     {
         return $this->getConf(self::CFG_CUSTOMVARY);
@@ -249,14 +261,22 @@ class Config
                 }
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
-                $bypass = isset($lm['general'][self::CFG_CONTEXTBYPASS]) ? $lm['general'][self::CFG_CONTEXTBYPASS] : '';
-                if ($bypass) {
-                    $this->_conf[self::CFG_CONTEXTBYPASS] = array_unique(preg_split($pattern, $bypass, null, PREG_SPLIT_NO_EMPTY));
-                } else {
-                    $this->_conf[self::CFG_CONTEXTBYPASS] = [];
-                }
+                $this->load_conf_field_array(self::CFG_CONTEXTBYPASS, $lm['general']);
+                $this->load_conf_field_array(self::CFG_IGNORED_BLOCKS, $lm['general']);
+                $this->load_conf_field_array(self::CFG_IGNORED_TAGS, $lm['general']);
+
                 $this->_conf[self::CFG_CUSTOMVARY] = isset($lm['general'][self::CFG_CUSTOMVARY]) ? $lm['general'][self::CFG_CUSTOMVARY] : 0;
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
+        }
+    }
+
+    private function load_conf_field_array($field_name, &$holder)
+    {
+        $value = isset($holder[$field_name]) ? $holder[$field_name] : '';
+        if ($value) {
+            $this->_conf[$field_name] = array_unique(preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY));
+        } else {
+            $this->_conf[$field_name] = [];
         }
     }
 
