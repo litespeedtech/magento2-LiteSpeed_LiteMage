@@ -12,6 +12,8 @@
             <general>
                 <contextbypass/>
                 <custom_vary>0</custom_vary>
+                <ignored_blocks/>
+                <ignored_tags/>
             </general>
             <dev>
                 <debug>0</debug>

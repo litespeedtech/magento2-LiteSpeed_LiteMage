@@ -17,12 +17,24 @@
                 <label>General Settings</label>
                 <field id="contextbypass" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Context Vary Bypass</label>
-                    <comment>By default, LiteMage will not cache if there is a context vary change in the current response. If certain context changes are global and cacheable, you can list their names in a comma-delimited string. LiteMage cache vary will bypass those context changes. Example: current_layout, weltpixel_gtm.</comment>
+                    <comment>If certain context changes are global and cacheable, you can list their names in a comma-delimited string. LiteMage cache vary will bypass those context changes and will not save a separate cache copy. Example: current_layout, weltpixel_gtm.</comment>
                 </field>
                 <field id="custom_vary" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enable Custom Vary</label>
                     <comment>Allows a new visitor to get a properly cached page when there is a customized vary in place. For example, different currencies based on GeoIP.</comment>
                     <source_model>Litespeed\Litemage\Model\System\Config\Source\CustomVary</source_model>
+                </field>
+                <field id="ignored_blocks" translate="label comment" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Ignored Identity Block Names</label>
+                    <comment>By default, an identity block will output cache tags. But there are some usages which defeat the purpose of cache tags, or which cause unnecessary server lookups. These usages include: an identity block that outputs many tags, or a block that appears on every page. To improve performance, you can ignore such blocks. Add the block names to the ignored list in a comma-delimited string.</comment>
+                </field>
+                <field id="ignored_tags" translate="label comment" type="textarea" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Ignored Cached Tags</label>
+                    <comment>Cache tags allow intelligent purging, as pages associated with a particular tag may be purged together. 
+                        However, performance will degrade if too many tags are assigned to a page. To improve performance, some tags may be ignored. 
+                        For example, tags that appear on every page are unnecessary, as a Purge All will have the same effect. 
+                        Turn on LiteMage Debug to examine the tags shown on the header, and determine which ones may safely be ignored. 
+                        Add these tags to the ignore list in a comma-delimited string.</comment>
                 </field>
             </group>
             <group id="dev" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
