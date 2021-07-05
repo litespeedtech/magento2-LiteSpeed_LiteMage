@@ -40,6 +40,8 @@ class CacheControl
     private const LSHEADER_DEBUG_Tag = 'X-LiteMage-Debug-Tag';
 
     protected $_bypassedContext = [];
+    protected $_ignoredBlocks = [];
+    protected $_ignoredTags = [];
     protected $_cacheTags = [];
     protected $_isCacheable = -1; // -1: not set, 0: No, 1: true
     protected $_isEsiRequest = false;
@@ -102,6 +104,8 @@ class CacheControl
         $this->_moduleEnabled = $config->moduleEnabled();
         if ($this->_moduleEnabled) {
             $this->_bypassedContext = $this->config->getBypassedContext();
+            $this->_ignoredBlocks = $this->config->getIgnoredBlocks();
+            $this->_ignoredTags = $this->config->getIgnoredTags();
         }
 
         $reason = '';
@@ -234,6 +238,11 @@ class CacheControl
     {
         $this->_hasESI = $isOn;
     }
+
+    public function debugLog($message)
+    {
+        $this->helper->debugLog($message);
+    }
     
     public function setCacheControlHeaders($response)
     {
@@ -293,7 +302,17 @@ class CacheControl
     {
         $lstags = '';
         if (!empty($this->_cacheTags)) {
-            $lstags = implode(',', $this->helper->translateFilterTags($this->_cacheTags));
+            $tags = $this->helper->translateFilterTags($this->_cacheTags);
+
+            if (!empty($this->_ignoredTags)) {
+                $tag1 = array_diff($tags, $this->_ignoredTags);
+                if (count($tag1) != count($tags)) {
+                    $this->helper->debugLog("Ignored translated tags " . implode(',', array_diff($tags, $tag1)) );
+                    $tags = $tag1;
+                }
+            }
+
+            $lstags = implode(',', $tags);
             $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
             $response->clearHeader('X-Magento-Tags');
         }
@@ -363,7 +382,7 @@ class CacheControl
             }
             $changed = true;
             $rawdata .= ' changed';
-            $this->setNotCacheable("EnvVary $rawdata");
+            // $this->setNotCacheable("EnvVary $rawdata");  // vary changed can be cached
         } else {
             // check vary value
             // $ov = isset($_SERVER['LSCACHE_VARY_VALUE']) ? $_SERVER['LSCACHE_VARY_VALUE'] : '';
@@ -380,11 +399,39 @@ class CacheControl
     public function addCacheTags($tags)
     {
         if (is_array($tags)) {
-            $this->_cacheTags = array_unique(array_merge($this->_cacheTags,
-                                                         $tags));
-        } elseif ($tags && !in_array($tags, $this->_cacheTags)) {
+
+            if (!empty($this->_ignoredTags)) {
+                $tag1 = array_diff($tags, $this->_ignoredTags);
+                if (count($tag1) != count($tags)) {
+                    $this->helper->debugLog("Ignored tags " . implode(',', array_diff($tags, $tag1)) );
+                    $tags = $tag1;
+                }
+            }
+
+            $this->_cacheTags = array_unique(array_merge($this->_cacheTags, $tags));
+
+        } elseif ($tags && !in_array($tags, $this->_cacheTags) && !in_array($tags, $this->_ignoredTags)) {
+            
+            $this->helper->debugLog("Added single tag $tags");
             $this->_cacheTags[] = $tags;
         }
+    }
+
+    public function addCacheTagsFromIdentityBlock($name, $block)
+    {
+        if (in_array($name, $this->_ignoredBlocks)) {
+            $this->helper->debugLog("Identity block $name ignored");
+            return;
+        }
+        $tags = array_unique($block->getIdentities());
+        $cnt = count($tags);
+        if ($cnt > 100) {
+            $this->helper->debugLog("Identity block $name contains $cnt tags. too many. take first 10 tags only. detail: " . implode(', ', $tags));
+            $tags = array_slice($tags, 0, 10); // only sample fist 10
+        } else {
+            $this->helper->debugLog("Identity block $name contains $cnt tags. detail: " . implode(', ', $tags));
+        }
+        $this->addCacheTags($tags);
     }
 
     public function setCacheTags($tags)
