@@ -107,7 +107,7 @@ class CachePurge
             $tags = array_slice($tags, 500);
         }
         if (count($tags) > 0)  {
-            $purgeTags = 'tag=' . implode(',tag=', $tags1);
+            $purgeTags = 'tag=' . implode(',tag=', $tags);
             $this->setRealPurgeHeaders($response, $purgeTags);
         }
     }
