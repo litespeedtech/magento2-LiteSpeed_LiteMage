@@ -87,7 +87,7 @@ class Purge extends \Magento\Framework\App\Action\Action
         $file = dirname(dirname(dirname(__FILE__))) . '/Observer/FlushCacheByCli.php';
         $stat = stat($file);
         $stat[] = date('l jS F Y h');
-        $secret1 = md5(print_r($stat, 1));
+        $secret1 = md5(print_r($stat, true));
 
         if ($secret != $secret1) {
             return 'Invalid token';

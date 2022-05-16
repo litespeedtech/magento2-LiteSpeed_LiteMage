@@ -28,6 +28,8 @@ class Config
     private const CFG_CUSTOMVARY = 'custom_vary';
     private const CFG_IGNORED_BLOCKS = 'ignored_blocks';
     private const CFG_IGNORED_TAGS = 'ignored_tags';
+    private const CFG_FRONT_STORE_ID = 'frontend_store_id';
+    private const CFG_SERVER_IP = 'server_ip';
     //const CFG_ADMINIPS = 'admin_ips';
     private const CFG_PUBLICTTL = 'public_ttl';
     private const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
@@ -53,6 +55,13 @@ class Config
      * @var \Magento\Framework\Module\Dir\Reader
      */
     protected $reader;
+
+    /**
+     *
+     * @var \Magento\PageCache\Model\Config
+     */
+    protected $pagecacheConfig;
+
     protected $_debug = -1; // avail value: -1(not set), true, false
     protected $_debug_trace = 0;
 
@@ -63,6 +72,7 @@ class Config
 	 *   4: FPC type is LITEMAGE
 	 */
 	protected $_moduleStatus = 0;
+    
 
     /**
      * @param Filesystem\Directory\ReadFactory $readFactory
@@ -80,6 +90,7 @@ class Config
         $this->readFactory = $readFactory;
         $this->scopeConfig = $scopeConfig;
         $this->reader = $reader;
+        $this->pagecacheConfig = $pagecacheConfig;
 
 		if ($this->licenseEnabled()) {
             $this->_moduleStatus |= 1;
@@ -87,7 +98,7 @@ class Config
         if ($pagecacheConfig->isEnabled()) {
 			$this->_moduleStatus |= 2;
 		}
-        if ($pagecacheConfig->getType() == self::LITEMAGE) {
+        if ( $pagecacheConfig->getType() == self::LITEMAGE) {
 			$this->_moduleStatus |= 4;
         }
 
@@ -109,6 +120,12 @@ class Config
 			return ($this->_moduleStatus == 7);
 		}
     }
+
+    public function getModuleStatus()
+    {
+        return $this->pagecacheConfig->getType() . ':' . $this->_moduleStatus;
+    }
+
 
     public function debugEnabled()
     {
@@ -226,6 +243,16 @@ class Config
         return $this->getConf(self::CFG_CUSTOMVARY);
     }
 
+    public function getFrontStoreId()
+    {
+        return $this->getConf(self::CFG_FRONT_STORE_ID);
+    }
+
+    public function getServerIp()
+    {
+        return $this->getConf(self::CFG_SERVER_IP);
+    }
+
     protected function _initConf( $type = '' )
     {
         $this->_conf = [];
@@ -259,6 +286,8 @@ class Config
                 if ($debugon) {
                     $this->_debug_trace = isset($lm['dev']['debug_trace']) ? $lm['dev']['debug_trace'] : 0;
                 }
+                $this->_conf[self::CFG_FRONT_STORE_ID] = isset($lm['dev'][self::CFG_FRONT_STORE_ID]) ? $lm['dev'][self::CFG_FRONT_STORE_ID] : 1; // default is store 1
+                $this->_conf[self::CFG_SERVER_IP] = isset($lm['dev'][self::CFG_SERVER_IP]) ? $lm['dev'][self::CFG_SERVER_IP] : '';
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
                 $this->load_conf_field_array(self::CFG_CONTEXTBYPASS, $lm['general']);

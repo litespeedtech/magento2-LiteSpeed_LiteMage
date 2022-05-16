@@ -49,7 +49,7 @@ class LayoutGenerateBlocksAfter
             if ($this->litemageCache->debugEnabled()) {
                 $nocache = '//' . \Magento\Framework\View\Layout\Element::TYPE_BLOCK . '[@cacheable="false"]';
                 $blocks = $layout->getUpdate()->asSimplexml()->xpath($nocache);
-                $str = print_r($blocks, 1);
+                $str = print_r($blocks, true);
                 $shortmsg = 'Layout has uncacheable blocks ';
                 if (preg_match_all('/\[name\] => ([^\s]+)/', $str, $m)) {
                     $shortmsg .= implode(', ', $m[1]);

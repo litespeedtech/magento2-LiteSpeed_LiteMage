@@ -2,13 +2,13 @@
     "name": "litespeed/module-litemage",
     "description": "LiteMage Full Page Cache for LiteSpeed Web Server",
     "require": {
-        "php": "^7.1",
+        "php": "^8.2",
         "ext-curl": "*",
         "magento/module-page-cache": "*",
         "magento/framework": "*"
     },
     "type": "magento2-module",
-    "version": "2.1.8",
+    "version": "2.1.9",
     "license": [
         "OSL-3.0",
         "AFL-3.0"

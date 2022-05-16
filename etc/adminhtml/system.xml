@@ -59,6 +59,14 @@
                         <field id="debug" separator=",">1,2</field>
                     </depends>
                 </field>
+                <field id="frontend_store_id" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Front-end Store ID</label>
+                    <comment>When flush cache from backend, it will send purge request to the front-end store url. In multi-site and multi-store setup, backend purge may get a wrong url. Specifies the default front store ID here. Default value is 1.</comment>
+                </field>
+                <field id="server_ip" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>LiteMage Server IP</label>
+                    <comment>Set where the LiteMage cache server is located so it can directly hit the server instead of having to go through proxy when flush the cache. Use this if LiteMage is behind a CDN or proxy server.</comment>
+                </field>
             </group>
         </section>
     </system>

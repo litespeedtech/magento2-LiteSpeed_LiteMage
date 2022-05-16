@@ -37,6 +37,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             $this->_debug = $this->config->debugEnabled();
             $this->_debugTrace = $this->config->debugTraceEnabled();
         }
+        // $this->debugLog($config->getModuleStatus(), true);
     }
 
     public function getUrl($route, array $params = [])
@@ -56,9 +57,12 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         $this->_logger->notice($message); // allow to show in production mode
     }
 
-    public function debugLog($message)
+    public function debugLog($message, $forced=false)
     {
-        if ($this->_debug) {
+        if ($this->_debug || $forced) {
+            if ($forced) {
+                $message .= ' ' . $this->config->getModuleStatus();
+            }
             $this->log($message);
         }
     }

@@ -23,9 +23,10 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
     protected $helper;
 
     /**
-     * @var \Magento\Framework\Url 
+     * @var \Magento\Framework\Url
      */
     protected $url;
+
     private $_reason;
 
     /**
@@ -38,6 +39,7 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
     /**
      * @param \Litespeed\Litemage\Model\Config $config,
      * @param \Magento\Framework\Registry $coreRegistry,
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager,
      * @param \Magento\Framework\Url $url,
      * @param \Litespeed\Litemage\Helper\Data $helper
      * @throws \Magento\Framework\Exception\IntegrationException
@@ -93,13 +95,9 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 
     private function _shellPurge($params)
     {
-        $msg = sprintf("FlushCacheByCli %s tags=%s", $this->_reason,
-                       print_r($params, 1));
-
-        $server_ip = false; //in future, allow this configurable.
-        $uparams = ['_type' => \Magento\Framework\UrlInterface::URL_TYPE_LINK,
-            '_secure' => true];
-        $base = $this->url->getBaseUrl($uparams);
+        $server_ip = $this->config->getServerIp();
+        $storeId = $this->config->getFrontStoreId();
+        $base = $this->url->getUrl('litemage/shell/purge', ['_scope' => $storeId, '_nosid' => true]);
         $headers = [];
         if ($server_ip) {
             $pattern = "/:\/\/([^\/^:]+)(\/|:)?/";
@@ -113,8 +111,11 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
         }
         $stat = stat(__FILE__);
         $stat[] = date('l jS F Y h');
-        $params['secret'] = md5(print_r($stat, 1));
-        $uri = $base . 'litemage/shell/purge?' . http_build_query($params);
+        $params['secret'] = md5(print_r($stat, true));
+        //$uri = $base . 'litemage/shell/purge?' . http_build_query($params);
+        $uri = $base . '?' . http_build_query($params);
+        $msg = sprintf('FlushCacheByCli %s url=%s ', $this->_reason, $uri);
+
         $result = true;
 
         try {
@@ -150,7 +151,7 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
         }
 
         $this->helper->debugLog($msg);
-
+        $this->helper->debugTrace('shellpurge');
         return $result;
     }
 
