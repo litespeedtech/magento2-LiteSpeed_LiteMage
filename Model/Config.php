@@ -271,7 +271,7 @@ class Config
                     // check ips
                     $debugips = trim($lm['dev']['debug_ips']);
                     if (PHP_SAPI !== 'cli' && $debugips) {
-                        $ips = array_unique(preg_split($pattern, $debugips, null, PREG_SPLIT_NO_EMPTY));
+                        $ips = array_unique(preg_split($pattern, $debugips, 0, PREG_SPLIT_NO_EMPTY));
                         if (!empty($ips)) {
                             $ip = $this->_getIp();
                             if (!in_array($ip, $ips)) {
@@ -303,7 +303,7 @@ class Config
     {
         $value = isset($holder[$field_name]) ? $holder[$field_name] : '';
         if ($value) {
-            $this->_conf[$field_name] = array_unique(preg_split("/[\s,]+/", $value, null, PREG_SPLIT_NO_EMPTY));
+            $this->_conf[$field_name] = array_unique(preg_split("/[\s,]+/", $value, 0, PREG_SPLIT_NO_EMPTY));
         } else {
             $this->_conf[$field_name] = [];
         }
