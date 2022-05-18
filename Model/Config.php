@@ -15,9 +15,9 @@ namespace Litespeed\Litemage\Model;
 class Config
 {
     /**
-     * Cache types
+     * Cache types, it requires INT value
      */
-    const LITEMAGE = 'LITEMAGE';
+    const LITEMAGE = 168;
 
     private const CFGXML_DEFAULTLM = 'litemage' ;
 
