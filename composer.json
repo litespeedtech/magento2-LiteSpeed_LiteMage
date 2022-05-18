@@ -2,7 +2,7 @@
     "name": "litespeed/module-litemage",
     "description": "LiteMage Full Page Cache for LiteSpeed Web Server",
     "require": {
-        "php": "^8.2",
+        "php": ">=7.3.0",
         "ext-curl": "*",
         "magento/module-page-cache": "*",
         "magento/framework": "*"
