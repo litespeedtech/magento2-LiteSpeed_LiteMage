@@ -102,7 +102,7 @@ class CachePurge
         // if contains big list, split to multi-headers
         while (count($tags) > 500) {
             $tag1 = array_slice($tags, 0, 500);
-            $purgeTags = 'tag=' . implode(',tag=', $tags1);
+            $purgeTags = 'tag=' . implode(',tag=', $tag1);
             $this->setRealPurgeHeaders($response, $purgeTags);
             $tags = array_slice($tags, 500);
         }
