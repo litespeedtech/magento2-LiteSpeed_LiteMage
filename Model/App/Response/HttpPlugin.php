@@ -8,6 +8,10 @@
 
 namespace Litespeed\Litemage\Model\App\Response;
 
+use Magento\Framework\App\PageCache\NotCacheableInterface;
+use Magento\Framework\App\Response\Http as HttpResponse;
+
+
 /**
  * HTTP response plugin for frontend.
  */
@@ -35,9 +39,9 @@ class HttpPlugin
      * @param \Magento\Framework\App\Response\Http $subject
      * @return void
      */
-    public function beforeSendResponse(\Magento\Framework\App\Response\Http $subject)
+    public function beforeSendResponse(HttpResponse $subject)
     {
-        if ($subject instanceof \Magento\Framework\App\PageCache\NotCacheableInterface) {
+        if ($subject instanceof NotCacheableInterface || $subject->headersSent()) {
             return;
         }
 		if ($this->litemageCache->moduleEnabled()) {
@@ -49,10 +53,9 @@ class HttpPlugin
     {
         $proceed($ttl);
         if ($this->litemageCache->moduleEnabled()) {
-            $msg = "Response HttpPlugin aroundSetPublicHeaders1 ttl=$ttl";
+            $msg = "Response HttpPlugin aroundSetPublicHeaders ttl=$ttl";
             $this->litemageCache->setCacheable($ttl, $msg);
         }
     }
 
-    //public function renderResult(ResponseInterface $response);
 }

@@ -12,61 +12,68 @@ namespace Litespeed\Litemage\Observer;
 class FlushCacheByTags implements \Magento\Framework\Event\ObserverInterface
 {
 
-    /**
-     * @var \Litespeed\Litemage\Model\Config
-     */
-    protected $config;
+	/**
+	 * @var \Litespeed\Litemage\Model\Config
+	 */
+	protected $config;
 
-    /** @var \Magento\Framework\Event\ManagerInterface */
-    protected $eventManager;
+	/**
+	 * @var \Litespeed\Litemage\Model\CachePurge
+	 */
+	protected $litemagePurge;
 
-    /**
-     * @param \Litespeed\Litemage\Model\Config $config,
-     * @param \Magento\Framework\Event\ManagerInterface $eventManager,
-     */
-    public function __construct(\Litespeed\Litemage\Model\Config $config,
-                                \Magento\Framework\Event\ManagerInterface $eventManager)
-    {
-        $this->config = $config;
-        $this->eventManager = $eventManager;
-    }
+	/** @var \Magento\Framework\Event\ManagerInterface */
+	protected $eventManager;
+	private $enabled;
 
-    /**
-     * Flush Litemage cache by Tags
-     * @param \Magento\Framework\Event\Observer $observer
-     * @return void
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function execute(\Magento\Framework\Event\Observer $observer)
-    {
-        if (!$this->config->moduleEnabled()) {
-            return;
-        }
-        
-        $rawtags = [];
-        $object = $observer->getEvent()->getObject();
-        if ($object instanceof \Magento\Framework\DataObject\IdentityInterface) {
-            $rawtags = $object->getIdentities();
-            if (!empty($rawtags)) {
-                $rawtags = $this->config->filterPurgeTags($rawtags);
-            }
-        }
+	/**
+	 * @param \Litespeed\Litemage\Model\Config $config,
+	 * @param \Magento\Framework\Event\ManagerInterface $eventManager,
+	 */
+	public function __construct(\Litespeed\Litemage\Model\Config $config,
+			\Litespeed\Litemage\Model\CachePurge $litemagePurge,
+			\Magento\Framework\Event\ManagerInterface $eventManager)
+	{
+		$this->config = $config;
+		$this->litemagePurge = $litemagePurge;
+		$this->eventManager = $eventManager;
+		$this->enabled = $this->config->moduleEnabled();
+	}
 
-        if (empty($rawtags)) {
-            return;
-        }
+	/**
+	 * Flush Litemage cache by Tags
+	 * @param \Magento\Framework\Event\Observer $observer
+	 * @return void
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 */
+	public function execute(\Magento\Framework\Event\Observer $observer)
+	{
+		if (!$this->enabled) {
+			return;
+		}
 
-        $reason = sprintf('FlushCacheByTags from %s %s',
-                          $observer->getEvent()->getName(),
-                          implode(',', $rawtags));
-        $param = ['tags' => $rawtags, 'reason' => $reason];
+		$rawtags = [];
+		$object = $observer->getEvent()->getObject();
+		if ($object instanceof \Magento\Framework\DataObject\IdentityInterface) {
+			$rawtags = $object->getIdentities();
+		}
 
-        if (PHP_SAPI == 'cli') {
-            // from command line
-            $this->eventManager->dispatch('litemage_cli_purge', $param);
-        } else {
-            $this->eventManager->dispatch('litemage_purge', $param);
-        }
-    }
+		if (empty($rawtags)) {
+			return;
+		}
+
+		$reason = sprintf('FlushCacheByTags event %s %s',
+				$observer->getEvent()->getName(),
+				implode(',', $rawtags));
+
+		if (PHP_SAPI == 'cli') {
+			// from command line
+			$param = ['tags' => $this->litemagePurge->filterPurgeTags($rawtags, $source),
+				'reason' => $reason];
+			$this->eventManager->dispatch('litemage_cli_purge', $param);
+		} else {
+			$this->litemagePurge->addPurgeTags($rawtags, $reason);
+		}
+	}
 
 }

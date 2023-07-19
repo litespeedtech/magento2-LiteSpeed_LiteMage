@@ -13,12 +13,20 @@
                 <contextbypass/>
                 <custom_vary>0</custom_vary>
                 <ignored_blocks/>
-                <ignored_tags/>
+                <ignored_tags>F,MB,store</ignored_tags>
             </general>
+            <purge>
+                <prod_edit_no_purge_cats>0</prod_edit_no_purge_cats>
+                <purge_prod_after_order>1</purge_prod_after_order>
+                <purge_parent_prod_after_order>1</purge_parent_prod_after_order>
+                <ignored_purge_tags>compare_item_*, wishlist_*</ignored_purge_tags>
+            </purge>
             <dev>
                 <debug>0</debug>
                 <debug_ips/>
                 <debug_trace>0</debug_trace>
+                <frontend_store_id>1</frontend_store_id>
+                <server_ip/>
             </dev>
         </litemage>
     </default>

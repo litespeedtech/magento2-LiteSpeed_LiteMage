@@ -40,23 +40,25 @@ class LayoutGenerateBlocksAfter
             return;
         }
         $layout = $observer->getEvent()->getLayout();
-        $msg = 'Observer LayoutGenerateBlocksAfter';
-        if ($layout->isCacheable()) {
-            // only now, as maybe multiple layout
-            $this->litemageCache->setCacheable(null, $msg);
-        } else {
+        if (!$layout->isCacheable()) {
             // not cacheable by layout, find out which blocks caused that for trouble shooting
             if ($this->litemageCache->debugEnabled()) {
                 $nocache = '//' . \Magento\Framework\View\Layout\Element::TYPE_BLOCK . '[@cacheable="false"]';
                 $blocks = $layout->getUpdate()->asSimplexml()->xpath($nocache);
-                $str = print_r($blocks, true);
+				$notcacheable = [];
+				foreach ($blocks as $block) {
+					if ($block->getAttribute('cacheable') === 'false') {
+						$notcacheable[] = $block->attributes();
+					}
+				}
+                $str = print_r($notcacheable, true);
                 $shortmsg = 'Layout has uncacheable blocks ';
                 if (preg_match_all('/\[name\] => ([^\s]+)/', $str, $m)) {
                     $shortmsg .= implode(', ', $m[1]);
                 }
-                $msg .= ' Blocks not cacheable ' . $str;
+                $msg = 'Observer LayoutGenerateBlocksAfter Blocks not cacheable ' . $str;
             } else {
-                $shortmsg = 'layout blocks';
+                $msg = $shortmsg = 'layout blocks';
             }
             $this->litemageCache->setNotCacheable($msg, $shortmsg);
         }

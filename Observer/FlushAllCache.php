@@ -17,6 +17,8 @@ class FlushAllCache implements \Magento\Framework\Event\ObserverInterface
      */
     protected $config;
 
+	private $enabled;
+
     /** @var \Magento\Framework\Event\ManagerInterface */
     protected $eventManager;
 
@@ -29,6 +31,7 @@ class FlushAllCache implements \Magento\Framework\Event\ObserverInterface
     {
         $this->config = $config;
         $this->eventManager = $eventManager;
+		$this->enabled = $this->config->moduleEnabled();
     }
 
     /**
@@ -39,7 +42,7 @@ class FlushAllCache implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if (!$this->config->moduleEnabled()) {
+        if (!$this->enabled) {
             return;
         }
 

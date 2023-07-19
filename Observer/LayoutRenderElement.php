@@ -40,16 +40,14 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
 
     /**
      * Replace the output of the block, containing ttl attribute, with ESI tag
-     *
-     * @param \Magento\Framework\View\Element\AbstractBlock $block
-     * @param \Magento\Framework\View\Layout $layout
-     * @return string
      */
     protected function _replaceEsi($blockName,
                                    \Magento\Framework\View\Layout $layout,
+                                   $access,
                                    $transport)
     {
         $handles = $layout->getUpdate()->getHandles();
+        
         $url = $this->litemageCache->getEsiUrl($handles, $blockName);
 
         $cacheTags = '';
@@ -58,8 +56,8 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
             $cacheTags = ' cache-tag="' . implode(',', $tags) . '"';
         }
 
-        $uri = sprintf('<esi:include src="%s"%s cache-control="public"/>', $url,
-                       $cacheTags);
+        $uri = sprintf('<esi:include src="%s"%s cache-control="%s"/>', $url,
+                       $cacheTags, $access);
 
         $this->litemageCache->setEsiOn(true);
         $output = $uri; // discard original output
@@ -98,7 +96,9 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
             if ($block instanceof \Magento\Framework\View\Element\AbstractBlock) {
                 $blockTtl = $block->getTtl();
                 if (isset($blockTtl)) {
-                    $this->_replaceEsi($name, $layout, $event->getTransport());
+                    // litemage extended feature: use negative ttl to mark private cached ttl
+                    $access = ($blockTtl > 0) ? 'public' : 'private'; 
+                    $this->_replaceEsi($name, $layout, $access, $event->getTransport());
                 }
             }
         }

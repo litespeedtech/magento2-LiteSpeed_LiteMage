@@ -23,13 +23,23 @@ class Config
 
 	private const STOREXML_PUBLICTTL = 'system/full_page_cache/ttl';
 
-    private const CFG_DEBUGON = 'debug' ;
+	// general settings
     private const CFG_CONTEXTBYPASS = 'contextbypass';
     private const CFG_CUSTOMVARY = 'custom_vary';
     private const CFG_IGNORED_BLOCKS = 'ignored_blocks';
     private const CFG_IGNORED_TAGS = 'ignored_tags';
+
+	// purge settings
+	private const CFG_PROD_EDIT_NO_PURGE_CATS = 'prod_edit_no_purge_cats';
+	private const CFG_PURGE_PROD_AFTER_ORDER = 'purge_prod_after_order';
+	private const CFG_PURGE_PARENT_PROD_AFTER_ORDER = 'purge_parent_prod_after_order';
+	private const CFG_IGNORED_PURGE_TAGS = 'ignored_purge_tags';
+
+	// dev
+	private const CFG_DEBUGON = 'debug' ;
     private const CFG_FRONT_STORE_ID = 'frontend_store_id';
     private const CFG_SERVER_IP = 'server_ip';
+
     //const CFG_ADMINIPS = 'admin_ips';
     private const CFG_PUBLICTTL = 'public_ttl';
     private const LITEMAGE_GENERAL_CACHE_TAG = 'LITESPEED_LITEMAGE' ;
@@ -238,6 +248,21 @@ class Config
         return $this->getConf(self::CFG_IGNORED_BLOCKS);
     }
 
+    public function getIgnoredPurgeTags()
+    {
+        return $this->getConf(self::CFG_IGNORED_PURGE_TAGS);
+    }
+
+    public function getProdEditNoPurgeCats()
+    {
+        return $this->getConf(self::CFG_PROD_EDIT_NO_PURGE_CATS);
+    }
+
+    public function getPurgeProdAfterOrder()
+    {
+        return $this->getConf(self::CFG_PURGE_PROD_AFTER_ORDER);
+    }
+
     public function getCustomVaryMode()
     {
         return $this->getConf(self::CFG_CUSTOMVARY);
@@ -266,7 +291,7 @@ class Config
         switch ( $type ) {
 
             default:
-                $debugon = isset($lm['dev'][self::CFG_DEBUGON]) ? $lm['dev'][self::CFG_DEBUGON] : 0;
+                $debugon = $lm['dev'][self::CFG_DEBUGON] ?? 0;
                 if ($debugon && isset($lm['dev']['debug_ips'])) {
                     // check ips
                     $debugips = trim($lm['dev']['debug_ips']);
@@ -284,24 +309,35 @@ class Config
                 $this->_conf[self::CFG_DEBUGON] = $debugon ;
                 $this->_isDebug = $debugon;
                 if ($debugon) {
-                    $this->_debug_trace = isset($lm['dev']['debug_trace']) ? $lm['dev']['debug_trace'] : 0;
+                    $this->_debug_trace = $lm['dev']['debug_trace'] ?? 0;
                 }
-                $this->_conf[self::CFG_FRONT_STORE_ID] = isset($lm['dev'][self::CFG_FRONT_STORE_ID]) ? $lm['dev'][self::CFG_FRONT_STORE_ID] : 1; // default is store 1
-                $this->_conf[self::CFG_SERVER_IP] = isset($lm['dev'][self::CFG_SERVER_IP]) ? $lm['dev'][self::CFG_SERVER_IP] : '';
+                $this->_conf[self::CFG_FRONT_STORE_ID] = $lm['dev'][self::CFG_FRONT_STORE_ID] ?? 1; // default is store 1
+                $this->_conf[self::CFG_SERVER_IP] = $lm['dev'][self::CFG_SERVER_IP] ?? '';
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
                 $this->load_conf_field_array(self::CFG_CONTEXTBYPASS, $lm['general']);
                 $this->load_conf_field_array(self::CFG_IGNORED_BLOCKS, $lm['general']);
                 $this->load_conf_field_array(self::CFG_IGNORED_TAGS, $lm['general']);
 
-                $this->_conf[self::CFG_CUSTOMVARY] = isset($lm['general'][self::CFG_CUSTOMVARY]) ? $lm['general'][self::CFG_CUSTOMVARY] : 0;
+				$this->_conf[self::CFG_PROD_EDIT_NO_PURGE_CATS] = $lm['purge'][self::CFG_PROD_EDIT_NO_PURGE_CATS] ?? 0;
+				$purge_prod = $lm['purge'][self::CFG_PURGE_PROD_AFTER_ORDER] ?? 1; // 0:no, 1:when out of stock, 2: always
+				$purge_parent = $lm['purge'][self::CFG_PURGE_PARENT_PROD_AFTER_ORDER] ?? 0;
+				if ($purge_prod && $purge_parent) {
+					$purge_prod |= 4;
+				}
+				$this->_conf[self::CFG_PURGE_PROD_AFTER_ORDER] = $purge_prod;
+
+
+				$this->load_conf_field_array(self::CFG_IGNORED_PURGE_TAGS, $lm['purge']);
+
+                $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?? 0;
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
         }
     }
 
-    private function load_conf_field_array($field_name, &$holder)
+    private function load_conf_field_array($field_name, $holder)
     {
-        $value = isset($holder[$field_name]) ? $holder[$field_name] : '';
+        $value = $holder[$field_name] ?? '';
         if ($value) {
             $this->_conf[$field_name] = array_unique(preg_split("/[\s,]+/", $value, 0, PREG_SPLIT_NO_EMPTY));
         } else {

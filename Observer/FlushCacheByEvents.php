@@ -21,6 +21,8 @@ class FlushCacheByEvents implements \Magento\Framework\Event\ObserverInterface
      * @var \Litespeed\Litemage\Model\Config
      */
     protected $config;
+
+	private $enabled;
     
     /**
      * 
@@ -32,6 +34,7 @@ class FlushCacheByEvents implements \Magento\Framework\Event\ObserverInterface
     {
         $this->litemagePurge = $litemagePurge;
         $this->config = $config;
+		$this->enabled = $this->config->moduleEnabled();
     }
 
     /**
@@ -42,8 +45,9 @@ class FlushCacheByEvents implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-		if (!$this->config->moduleEnabled())
-			return;
+        if (!$this->enabled) {
+            return;
+        }
 
 		$event = $observer->getEvent();
 		// do not use getEventName() directly, maybe empty

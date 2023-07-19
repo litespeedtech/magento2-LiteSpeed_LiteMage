@@ -36,6 +36,8 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
      */
     protected $coreRegistry;
 
+	private $enabled;
+
     /**
      * @param \Litespeed\Litemage\Model\Config $config,
      * @param \Magento\Framework\Registry $coreRegistry,
@@ -56,6 +58,7 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
         $this->coreRegistry = $coreRegistry;
         $this->url = $url;
         $this->helper = $helper;
+		$this->enabled = $this->config->moduleEnabled();
     }
 
     /**
@@ -66,8 +69,9 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
-        if (!$this->config->moduleEnabled())
+        if (!$this->enabled) {
             return;
+        }
 
         $event = $observer->getEvent();
         $tags = $event->getTags();
@@ -88,7 +92,10 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
                 }
             }
             if (!empty($used)) {
-                $this->_shellPurge(['tags' => implode(',', $used)]);
+                $list = array_chunk($used, 50); // split to avoid url too long
+                foreach ($list as $l) {
+                    $this->_shellPurge(['tags' => implode(',', $l)]);
+                }
             }
         }
     }

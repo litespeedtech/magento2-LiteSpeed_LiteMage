@@ -10,9 +10,6 @@
     <type name="\Magento\Framework\App\FrontControllerInterface">
         <plugin name="front-controller-litemage" type="\Litespeed\Litemage\Model\App\FrontController\LitemagePlugin"/>
     </type>
-    <type name="\Magento\Framework\Controller\ResultInterface">
-        <plugin name="controller-result-litemage" type="\Litespeed\Litemage\Model\Controller\Result\LitemagePlugin"/>
-    </type>
     <type name="Magento\Framework\View\Layout">
         <plugin name="view-layout-litemage" type="\Litespeed\Litemage\Model\Layout\LayoutPlugin"/>
     </type>

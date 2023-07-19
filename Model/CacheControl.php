@@ -43,12 +43,14 @@ class CacheControl
     protected $_ignoredBlocks = [];
     protected $_ignoredTags = [];
     protected $_cacheTags = [];
-    protected $_isCacheable = -1; // -1: not set, 0: No, 1: true
+    protected $_isCacheable = -1; // -1: not set, 0: No, 1: public, 2: private
+	protected $_isStaticAssets;
     protected $_isEsiRequest = false;
     protected $_moduleEnabled;
     protected $_hasESI = false;
-    protected $_ttl = 0;
+    protected $_ttl = 0; 
     protected $_nocacheReason = '';
+    protected $_internal = [];
 
     /** @var \Magento\Framework\App\Http\Context */
     protected $httpContext;
@@ -65,6 +67,9 @@ class CacheControl
 
     /** @var \Magento\Store\Model\StoreManagerInterface */
     protected $storeManager;
+
+    /** @var \Magento\Customer\Model\Session */
+    protected $userSession;
     
     /** @var \Litespeed\Litemage\Helper\Data */
     protected $helper;
@@ -74,12 +79,14 @@ class CacheControl
     /**
      * constructor
      *
-     * @param \Magento\Framework\App\Http\Context $httpContext,
-     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
-     * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
-     * @param \Magento\Framework\App\Request\Http $requObserver/Checkcurrentcountrystore.php
-      est,
-     * @param \Litespeed\Litemage\Model\Config $config,
+     * @param HttpContext $httpContext
+     * @param \Magento\Framework\Session\SessionManagerInterface $session
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
+     * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
+     * @param \Magento\Framework\App\Request\Http $request
+     * @param StoreManagerInterface $storeManager
+     * @param \Magento\Customer\Model\Session $userSession
+     * @param \Litespeed\Litemage\Model\Config $config
      * @param \Litespeed\Litemage\Helper\Data $helper
      */
     public function __construct(\Magento\Framework\App\Http\Context $httpContext,
@@ -88,6 +95,7 @@ class CacheControl
                                 \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
                                 \Magento\Framework\App\Request\Http $request,
                                 \Magento\Store\Model\StoreManagerInterface $storeManager,
+                                \Magento\Customer\Model\Session $userSession,
                                 \Litespeed\Litemage\Model\Config $config,
                                 \Litespeed\Litemage\Helper\Data $helper
     )
@@ -98,6 +106,7 @@ class CacheControl
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->request = $request;
         $this->storeManager = $storeManager;
+        $this->userSession = $userSession;
 
         $this->config = $config;
         $this->helper = $helper;
@@ -106,6 +115,11 @@ class CacheControl
             $this->_bypassedContext = $this->config->getBypassedContext();
             $this->_ignoredBlocks = $this->config->getIgnoredBlocks();
             $this->_ignoredTags = $this->config->getIgnoredTags();
+			$uri = $request->getUriString();
+			$this->_isStaticAssets = in_array(substr($uri, -4), ['.css','.ico']);
+            $this->debugLog(sprintf('New Request %s %s',
+                            $request->getMethod(),
+                            $uri));
         }
 
         $reason = '';
@@ -118,6 +132,8 @@ class CacheControl
                 $reason = 'ajax with random string';
             } elseif ('true' === $request->getQuery('force_new_section_timestamp')) {
                 $reason = 'ajax with force_new_section_timestamp';
+            } elseif ($request->getQuery('version')) {
+                $reason = 'ajax with version string';
             }
         }
         // check if private info
@@ -126,9 +142,7 @@ class CacheControl
         }
 
         if ($reason) {
-            $fullreason = sprintf("%s CacheControl constructor: %s",
-                                  $request->getRequestUri(), $reason);
-            $this->setNotCacheable($fullreason, $reason);
+            $this->setNotCacheable("CacheControl constructor: $reason", $reason);
         }
     }
 
@@ -142,23 +156,80 @@ class CacheControl
         return $this->helper->debugEnabled();
     }
     
-    public function setCacheable($ttl, $msg)
+    /**
+     * Can only reduce scope, make ttl smaller, public change to private
+     * @param int $ttl > 0, is public, < 0, is private, -1, ESI not cacheable
+     * @param string $msg
+     */
+    public function setCacheable($ttl, $msg, $trace=false)
     {
-        // cannot set from non cacheable to cacheable
-        if ($this->_isCacheable == -1) {
-            $this->_isCacheable = 1;
-            $this->helper->setCacheableFlag(1, $msg);
+        $updated = false;
+        
+        // check valid range
+        if ($ttl == -1) {
+            // special value for ESI block not cacheable
+            $ttl = 0;
+        } elseif ($ttl < -1) {
+            // for private cache, 300-14400 (5min - 4hr)
+            if ($ttl > -300) {
+                $ttl = -300;
+            } elseif ($ttl < -14400) {
+                $ttl = -14400;
+            }
+        } elseif ($ttl > 0) {
+            // for public cache, >= 600
+            if ($ttl < 600) {
+                $ttl = 600;
+            }
+        } 
+            
+        switch ($this->_isCacheable) {
+            case -1: // init
+                if ($ttl === null || $ttl > 0) {
+                    $this->_isCacheable = 1; // public cacheable
+                } elseif ($ttl < 0) {
+                    $this->_isCacheable = 2; // private cacheable
+                } else {
+                    $this->_isCacheable = 0; // not cacheable
+                }
+                $updated = true;
+                break;
+                
+            case 1: // already set public
+                if ($ttl > 0 && $ttl < $this->_ttl) { // allow reduce ttl
+                    $updated = true; 
+                } elseif ($ttl < 0) { // downgrade to private
+                    $this->_isCacheable = 2; // private cacheable
+                    $updated = true;
+                } elseif ($ttl == 0) {
+                    $this->_isCacheable = 0;
+                    $updated = true;
+                }
+                break;
+                
+            case 2: // already set private
+                if ($ttl < 0 && $ttl > $this->_ttl) { // allow reduce ttl
+                    $updated = true; 
+                } elseif ($ttl == 0) {
+                    $this->_isCacheable = 0;
+                    $updated = true;
+                }
+                break;
+                
+            case 0: // cannot switch from non-cacheable to cacheable
+                break;
         }
-        if ($ttl > 0) {
+        
+        if ($updated) {
             $this->_ttl = $ttl;
+            $this->helper->setCacheableFlag($this->_isCacheable, $msg, $trace);
         }
+        return $updated;
     }
 
     public function setNotCacheable($reason, $shortReason = '')
     {
-        if ($this->_isCacheable != 0) {
-            $this->_isCacheable = 0;
-            $this->helper->setCacheableFlag(0, $reason);
+        if ($this->setCacheable(0, $reason)) {
             $this->_nocacheReason = $shortReason ?: $reason;
         }
     }
@@ -182,7 +253,12 @@ class CacheControl
 
     public function canInjectEsi()
     {
-        return ($this->_isCacheable === 1 && !$this->_isEsiRequest);
+        return ($this->_isCacheable === 1 && !$this->_isEsiRequest && !$this->_isStaticAssets);
+    }
+
+    public function isLoggedIn()
+    {
+        return ($this->userSession->getCustomerGroupId() > 0);
     }
 
     public function getEsiUrl($handles, $blockName)
@@ -191,7 +267,7 @@ class CacheControl
                 'litemage/block/esi',
                 [
                     'b' => $blockName,
-                    'h' => $this->encodeEsiHandles($handles)
+                    'h' => $this->encodeEsiHandles($handles),
                 ]
         );
 
@@ -244,41 +320,46 @@ class CacheControl
         $this->helper->debugLog($message);
     }
     
-    public function setCacheControlHeaders($response)
+    public function setCacheControlHeaders($response) 
     {
-        $cacheControlHeader = '';
+        if (isset($this->_internal['cch'])) {
+             $this->helper->debugLog("SetCacheControlHeaders ignored, already set. ($access,$ttl)");
+             return;
+        }
         $lstags = '';
         $changed = $this->checkCacheVary();
 
         $responsecode = $response->getHttpResponseCode();
         if ($responsecode == 404) {
-            if (strpos($this->request->getRequestUri(), 'checkout') !== false) {
-                $this->_isCacheable = 0;
-                $this->helper->setCacheableFlag(0, 'CHECKOUT ALERT 404', true);
-            }
+            if (strpos($this->request->getRequestUri(), 'checkout') !== false && !$this->_isStaticAssets) {
+                $this->setCacheable(0, 'CHECKOUT ALERT 404', true);
+            } else {
+				$this->addCacheTags('404'); // later can set a 404 ttl, purge 404 pages
+			}
         }
         
-        if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable == 1)
+        if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable > 0)
         ) {
             // cacheable
-            $lstags = $this->_setCacheTagHeader($response);
-
-            $cacheControlHeader = 'public,max-age=' . $this->_ttl;
-        }
+            $lstags = $this->setCacheTagHeader($response);
+            $cache_control = sprintf('%s,max-age=%d', 
+                    (($this->_isCacheable == 1) ? 'public':'private'),
+                    abs($this->_ttl));
+        } else {
+			$cache_control = 'no-cache';
+		}
+        
         if ($this->_hasESI) {
-            if ($cacheControlHeader != '')
-                $cacheControlHeader .= ',';
-            $cacheControlHeader .= 'esi=on';
+            $cache_control .= ',esi=on';
         }
 
-        if ($cacheControlHeader) {
-            $response->setHeader(self::LSHEADER_CACHE_CONTROL,
-                                 $cacheControlHeader);
-            $this->helper->debugLog(sprintf('SetCacheControlHeaders: %s %s Tags: %s',
-                                            $cacheControlHeader,
-                                            $this->request->getRequestUri(),
-                                            $lstags));
-        }
+		$response->setHeader(self::LSHEADER_CACHE_CONTROL, $cache_control);
+		if ($cache_control != 'no-cache') {
+			$this->helper->debugLog(sprintf('SetCacheControlHeaders: %s %s Tags: %s',
+										$cache_control,
+										$this->request->getRequestUri(),
+										$lstags));
+		}
         if ($cch = $response->getHeader('Cache-Control')) {
             if (preg_match('/public.*s-maxage=(\d+)/', $cch->getFieldValue(),
                            $matches)) {
@@ -288,17 +369,17 @@ class CacheControl
         }
         if ($this->helper->debugEnabled() == 2) {
             // show debug headers
-            $response->setHeader(self::LSHEADER_DEBUG_CC, $cacheControlHeader);
-            $response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
+            $response->setHeader(self::LSHEADER_DEBUG_CC, $cache_control);
             $response->setHeader(self::LSHEADER_DEBUG_INFO,
                                  substr(htmlspecialchars(str_replace("\n", ' ',
                                                                      $this->_nocacheReason)),
                                                                      0, 256));
             $response->setHeader(self::LSHEADER_DEBUG_VARY, $this->rawVaryString);
         }
+        $this->_internal['cch'] = $cache_control;
     }
-
-    protected function _setCacheTagHeader($response)
+    
+    protected function setCacheTagHeader($response)
     {
         $lstags = '';
         if (!empty($this->_cacheTags)) {
@@ -311,14 +392,19 @@ class CacheControl
                     $tags = $tag1;
                 }
             }
-
-            $lstags = implode(',', $tags);
-            $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
-            $response->clearHeader('X-Magento-Tags');
+        
+            if (!empty($tags)) {
+                $lstags = implode(',', $tags);
+                $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
+                $response->clearHeader('X-Magento-Tags');
+                if ($this->helper->debugEnabled() == 2) {
+                    $response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
+                }
+            }
         }
         return $lstags;
     }
-    
+
     public function checkCacheVary()
     {
         // check custvary first
@@ -363,8 +449,9 @@ class CacheControl
         if (!empty($data)) {
             ksort($data);
             $rawdata = http_build_query($data);
-            if ($rawdata)
+            if ($rawdata) {
                 $varyString = sha1(json_encode($rawdata));
+            }
         }
 
         $changed = false;
@@ -381,8 +468,7 @@ class CacheControl
                                                    $cookieMetadata);
             }
             $changed = true;
-            $rawdata .= ' changed';
-            // $this->setNotCacheable("EnvVary $rawdata");  // vary changed can be cached
+            $rawdata .= ' changed'; // vary changed can be cached
         } else {
             // check vary value
             // $ov = isset($_SERVER['LSCACHE_VARY_VALUE']) ? $_SERVER['LSCACHE_VARY_VALUE'] : '';
@@ -401,10 +487,10 @@ class CacheControl
         if (is_array($tags)) {
 
             if (!empty($this->_ignoredTags)) {
-                $tag1 = array_diff($tags, $this->_ignoredTags);
-                if (count($tag1) != count($tags)) {
-                    $this->helper->debugLog("Ignored tags " . implode(',', array_diff($tags, $tag1)) );
-                    $tags = $tag1;
+                $tags1 = array_diff($tags, $this->_ignoredTags);
+                if (count($tags1) != count($tags)) {
+                    $this->helper->debugLog("Ignored tags " . implode(',', array_diff($tags, $tags1)) );
+                    $tags = $tags1;
                 }
             }
 
@@ -426,8 +512,8 @@ class CacheControl
         $tags = array_unique($block->getIdentities());
         $cnt = count($tags);
         if ($cnt > 100) {
-            $this->helper->debugLog("Identity block $name contains $cnt tags. too many. take first 10 tags only. detail: " . implode(', ', $tags));
-            $tags = array_slice($tags, 0, 10); // only sample fist 10
+            $this->helper->debugLog("Identity block $name contains $cnt tags. too many. take first 100 tags only. detail: " . implode(', ', $tags));
+            $tags = array_slice($tags, 0, 100); // only sample fist 100
         } else {
             $this->helper->debugLog("Identity block $name contains $cnt tags. detail: " . implode(', ', $tags));
         }

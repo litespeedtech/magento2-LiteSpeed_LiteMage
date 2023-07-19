@@ -57,5 +57,10 @@
     <event name="litemage_purge">
         <observer name="litemage_purge_internal" instance="Litespeed\Litemage\Observer\FlushCacheByEvents"/>
     </event>
-    
+    <event name="litemage_add_cache_tags">
+        <observer name="litemage_cache_tags" instance="Litespeed\Litemage\Observer\AddCacheTags"/>
+    </event>
+    <event name="sales_order_place_after">
+        <observer name="litemage_after_order_placed" instance="Litespeed\Litemage\Observer\AfterOrderPlaced" />
+    </event>
 </config>

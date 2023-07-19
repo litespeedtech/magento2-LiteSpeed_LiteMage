@@ -37,7 +37,40 @@
                         Add these tags to the ignore list in a comma-delimited string.</comment>
                 </field>
             </group>
-            <group id="dev" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+            <group id="purge" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Purge Tuning</label>
+                <field id="prod_edit_no_purge_cats" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Do Not Purge Category Tags when a Product is Updated</label>
+                    <comment>By default, when a product is updated, a reindex will purge all parent category pages. In categories and parent categories with many active products, 
+                        this can lead to constant purging. Select "Yes" to purge only the product tag. Then, only the product page and related pages containing the product will be purged. 
+                        Category and parent category pages that do not contain this product will not be purged. </comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="purge_prod_after_order" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Purge Products after a Sale</label>
+                    <comment>If the product's in-stock quantity is displayed, select "Always purge." 
+                        If only the product's stock status is displayed, select "Only purge when out of stock." 
+                        If no stock status is shown, then there is no need to purge the product. 
+                        Note: when you purge a product tag, all related pages that display the product are also purged.</comment>
+                    <source_model>Litespeed\Litemage\Model\System\Config\Source\PurgeAfterOrder</source_model>
+                </field>
+                <field id="purge_parent_prod_after_order" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Purge Related Parent Products after a Sale</label>
+                    <comment>If a simple product is purged after a sale, and it has a parent product, also purge the parent product.</comment>                    
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends>
+                        <field id="purge_prod_after_order" separator=",">1,2</field>
+                    </depends>
+                </field>                
+                <field id="ignored_purge_tags" translate="label comment" type="textarea" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Ignored Purge Tags</label>
+                    <comment>Purge tags usually have corresponding cache tags. However some third party modules will send unmatched purge tags that are never used. 
+                        To keep LiteSpeed server from having to track such unused tags, you can add them here, in a comma-delimited string.
+                        Use a * as a wildcard at the end of a tag to group tags with common starting characters. 
+                        Note: Ignored Cache Tags are automatically included in this list. Only add tags that are not already in that list.</comment>
+                </field>
+            </group>
+            <group id="dev" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>Developer Settings</label>
                 <field id="debug" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Enable Debug</label>

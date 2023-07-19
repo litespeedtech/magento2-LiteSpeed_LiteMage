@@ -9,6 +9,9 @@
 
 namespace Litespeed\Litemage\Model\App\Response;
 
+use Magento\Framework\App\FrontControllerInterface;
+use Magento\Framework\App\Response\HttpInterface;
+
 /**
  * HTTP response plugin for frontend purge.
  */
@@ -20,16 +23,23 @@ class HttpPurgePlugin
      */
     protected $litemagePurge;
 
+	/**
+	 * @var \Magento\Framework\App\Request\Http
+	 */
+	protected $request;
+
     /**
      * Constructor
      *
      * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
      */
     public function __construct(
-            \Litespeed\Litemage\Model\CachePurge $litemagePurge
+            \Litespeed\Litemage\Model\CachePurge $litemagePurge,
+			\Magento\Framework\App\Request\Http $request
     )
     {
         $this->litemagePurge = $litemagePurge;
+		$this->request = $request;
     }
 
     /**
@@ -44,5 +54,16 @@ class HttpPurgePlugin
             $this->litemagePurge->setPurgeHeaders($subject);
         }
     }
+
+	// used by webapi
+    public function afterDispatch(FrontControllerInterface $controller, HttpInterface $response): HttpInterface
+    {
+        if ($this->litemagePurge->needPurge()) {
+			$this->litemagePurge->debugLog('WebAPI request triggered purge ' . $this->request->getRequestUri());
+            $this->litemagePurge->setPurgeHeaders($response);
+        }
+		return $response;
+    }
+
 
 }
