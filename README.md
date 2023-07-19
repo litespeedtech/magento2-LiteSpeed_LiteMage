@@ -15,7 +15,7 @@ LiteSpeed Web Server Enterprise Edition with Magento 2 set up and working.
 
 ### PHP
 
-Magento 2 requires PHP versions 7.0.2+, 5.6.x, or 5.5.x. In the command line, type `php -v` to get the php version used by the command line interface. This version may be different than the one used by the server.
+Magento 2 requires PHP version 8. In the command line, type `php -v` to get the php version used by the command line interface. This version may be different than the one used by the server.
 If the version number does not match the one used within the server, there may be some compatibility issues.
 
 Run the command `which php` to get the directory of the php binary. Then, change the current binary name to something different as a backup (e.g. `mv php php-orig`). Lastly, symbolic link or copy the binary installed in the LSWS directory to the directory returned by the `which` command. If the which command doesn't return anything, we recommend using `/usr/local/bin/` or `/usr/bin/`.
@@ -65,12 +65,7 @@ The following steps assume that the Prerequisites mentioned above are met.
     ```
     php bin/magento setup:di:compile
     ```
-11. Once finished, delete `var/di/relations.ser` to work around a Magento bug. [link](https://github.com/magento/magento2/issues/4070)
-
-    ```
-    rm var/di/relations.ser
-    ```
-12. If desired, switch back to production mode. The previous step may need to be repeated after the mode switch.
+11. If desired, switch back to production mode. The previous step may need to be repeated after the mode switch.
 
 ### Enable LiteMage after installation:
 
@@ -97,6 +92,4 @@ No further changes to your Magento 2 configurations should be necessary as LiteM
 
 ## Todo
 * Add Cache Warm up
-* Add Customizable Configurations
-* Add Unit Tests
 
