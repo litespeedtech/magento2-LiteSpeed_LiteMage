@@ -68,7 +68,7 @@ class FlushCacheByTags implements \Magento\Framework\Event\ObserverInterface
 
 		if (PHP_SAPI == 'cli') {
 			// from command line
-			$param = ['tags' => $this->litemagePurge->filterPurgeTags($rawtags, $source),
+			$param = ['tags' => $this->litemagePurge->filterPurgeTags($rawtags, 'CLI'),
 				'reason' => $reason];
 			$this->eventManager->dispatch('litemage_cli_purge', $param);
 		} else {
