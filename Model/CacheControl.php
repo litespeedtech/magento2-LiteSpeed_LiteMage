@@ -323,7 +323,7 @@ class CacheControl
     public function setCacheControlHeaders($response) 
     {
         if (isset($this->_internal['cch'])) {
-             $this->helper->debugLog("SetCacheControlHeaders ignored, already set. ($access,$ttl)");
+             $this->helper->debugLog("SetCacheControlHeaders ignored, already set. ($this->_ttl)");
              return;
         }
         $lstags = '';
