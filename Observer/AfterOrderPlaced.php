@@ -43,28 +43,35 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
 	/**
 	 * 
 	 * @param \Magento\Store\Model\StoreManagerInterface $storemanager
-	 * @param \Magento\InventorySalesApi\Api\GetProductSalableQtyInterface $salebleqty
-	 * @param \Magento\InventorySalesApi\Api\StockResolverInterface $stockresolver
 	 * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
 	 * @param \Litespeed\Litemage\Model\Config $config
 	 */
     public function __construct(
 			\Magento\Store\Model\StoreManagerInterface $storemanager,
-			\Magento\InventorySalesApi\Api\GetProductSalableQtyInterface $salebleqty,
-			\Magento\InventorySalesApi\Api\StockResolverInterface $stockresolver,
+			\Magento\Framework\Module\Manager $moduleManager,
+			\Magento\Framework\ObjectManagerInterface $objectManager,
 			\Litespeed\Litemage\Model\CachePurge $litemagePurge,
 			\Litespeed\Litemage\Model\Config $config
 	)
 	{
 		$this->storemanager = $storemanager;
-		$this->salebleqty = $salebleqty;
-		$this->stockresolver = $stockresolver;
 		$this->litemagePurge = $litemagePurge;
 		$this->config = $config;
 
 		$this->enabled = $this->config->moduleEnabled();
 		if ($this->enabled) {
 			$this->enabled = $this->config->getPurgeProdAfterOrder(); // 0: no; 1: when out of stock; 2: always; 4: include parent prod
+		}
+
+		if (($this->enabled & 1) == 1) { // only when out of stock
+			if ($moduleManager->isEnabled('Magento_Inventory')) {
+				$this->salebleqty = $objectManager->get(\Magento\InventorySalesApi\Api\GetProductSalableQtyInterface::class);
+				$this->stockresolver = $objectManager->get(\Magento\InventorySalesApi\Api\StockResolverInterface::class);
+			} else {
+				$this->enabled = 0;
+				$this->litemagePurge->debugLog('AfterOrderPlaced disabled due to not using Magento_Inventory modules');
+			}
+
 		}
 	}
 
@@ -74,18 +81,20 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
             return;
         }
 
-        $websiteCode = $this->storemanager->getWebsite()->getCode();
-        $stockDetails = $this->stockresolver->execute(\Magento\InventorySalesApi\Api\Data\SalesChannelInterface::TYPE_WEBSITE, $websiteCode);
-        $stockId = $stockDetails->getStockId();
-
 		$order = $observer->getData('order');
-		$isPaypalExpress = ($order->getPayment()->getMethod() == 'paypal_express');
         $items = $order->getAllItems();
 		$pids = [];
 
 		$only_outofstock = ($this->enabled & 1);
 		$include_parent = (($this->enabled & 4) == 4);
 		$has_parent = false;
+
+		if ($only_outofstock) {
+			$websiteCode = $this->storemanager->getWebsite()->getCode();
+			$stockDetails = $this->stockresolver->execute(\Magento\InventorySalesApi\Api\Data\SalesChannelInterface::TYPE_WEBSITE, $websiteCode);
+			$stockId = $stockDetails->getStockId();
+			$isPaypalExpress = ($order->getPayment()->getMethod() == 'paypal_express');
+		}
 
 		$parents = [];
 
