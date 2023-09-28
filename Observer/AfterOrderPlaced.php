@@ -106,13 +106,24 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
 				$parents[] = $pid;
 				continue;
 			}
-
 			if ($only_outofstock) {
-				$stockQty = $this->salebleqty->execute($item->getSku(), $stockId);
-				$this->litemagePurge->debugLog('stockqty pid = ' . $pid . '  qty ' . $stockQty);
-				if (($isPaypalExpress && $stockQty > $item->getQtyOrdered())
-						|| (!$isPaypalExpress && $stockQty > 0)) {
-					$parents = []; // reset parent
+				try {
+					$sku = $item->getSku();
+					$options = $item->getProductOptions();
+					if (strpos($sku, '-') && !empty($options['options'])) {
+						// possible combined sku string due to options, pick original sku by product
+						$sku = $item->getProduct()->getSku();
+					}
+					$stockQty = $this->salebleqty->execute($sku, $stockId);
+					$this->litemagePurge->debugLog('stockqty pid = ' . $pid . '  qty ' . $stockQty);
+					if (($isPaypalExpress && $stockQty > $item->getQtyOrdered())
+							|| (!$isPaypalExpress && $stockQty > 0)) {
+						$parents = []; // reset parent
+						continue;
+					}
+				} catch (\Throwable $e) {
+					// may not able to get salebleqty when product has customizable options, ignore
+					$parents = [];
 					continue;
 				}
 			}

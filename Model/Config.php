@@ -225,12 +225,13 @@ class Config
             $this->_initConf($type) ;
         }
 
-        if ( $type == '' )
+        if ( $type == '' ) {
             return $this->_conf[$name] ;
-        else if ( $name == '' )
+		} elseif ( $name == '' ) {
             return $this->_conf[$type] ;
-        else
+		} else {
             return $this->_conf[$type][$name] ;
+		}
     }
 
     public function getBypassedContext()
@@ -240,7 +241,7 @@ class Config
 
     public function getIgnoredTags()
     {
-        return $this->getConf(self::CFG_IGNORED_TAGS);
+        return array_diff($this->getConf(self::CFG_IGNORED_TAGS), ['MB','store']);
     }
 
     public function getIgnoredBlocks()

@@ -381,7 +381,11 @@ class CacheControl
     
     protected function setCacheTagHeader($response)
     {
-        $lstags = '';
+		$tags = [];
+		if (empty($this->_cacheTags)) {
+            $tagsHeader = $response->getHeader('X-Magento-Tags');
+            $this->_cacheTags = $tagsHeader ? explode(',', $tagsHeader->getFieldValue() ?? '') : [];
+		}
         if (!empty($this->_cacheTags)) {
             $tags = $this->helper->translateFilterTags($this->_cacheTags);
 
@@ -392,16 +396,21 @@ class CacheControl
                     $tags = $tag1;
                 }
             }
+		}
+
+		if (!in_array('MB', $tags)) {
+			array_unshift($tags, 'MB'); // MB is required
+		}
+		if (!in_array('store', $tags)) {
+			array_unshift($tags, 'store'); // MB is required
+		}
         
-            if (!empty($tags)) {
-                $lstags = implode(',', $tags);
-                $response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
-                $response->clearHeader('X-Magento-Tags');
-                if ($this->helper->debugEnabled() == 2) {
-                    $response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
-                }
-            }
-        }
+		$lstags = implode(',', $tags);
+		$response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
+		$response->clearHeader('X-Magento-Tags');
+		if ($this->helper->debugEnabled() == 2) {
+			$response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
+		}
         return $lstags;
     }
 

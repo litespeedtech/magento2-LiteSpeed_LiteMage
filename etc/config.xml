@@ -13,7 +13,7 @@
                 <contextbypass/>
                 <custom_vary>0</custom_vary>
                 <ignored_blocks/>
-                <ignored_tags>F,MB,store</ignored_tags>
+                <ignored_tags>F</ignored_tags>
             </general>
             <purge>
                 <prod_edit_no_purge_cats>0</prod_edit_no_purge_cats>

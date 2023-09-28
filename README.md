@@ -13,20 +13,6 @@ LiteMage Cache operates by taking information from Magento and instructing the L
 ## Prerequisites
 LiteSpeed Web Server Enterprise Edition with Magento 2 set up and working.
 
-### PHP
-
-Magento 2 requires PHP version 8. In the command line, type `php -v` to get the php version used by the command line interface. This version may be different than the one used by the server.
-If the version number does not match the one used within the server, there may be some compatibility issues.
-
-Run the command `which php` to get the directory of the php binary. Then, change the current binary name to something different as a backup (e.g. `mv php php-orig`). Lastly, symbolic link or copy the binary installed in the LSWS directory to the directory returned by the `which` command. If the which command doesn't return anything, we recommend using `/usr/local/bin/` or `/usr/bin/`.
-
-Example using PHP 7 with `which` returning `/usr/bin/php`:
-```
-mv /usr/bin/php /usr/bin/php-orig
-ln -s /usr/local/lsws/lsphp70/bin/php /usr/bin/php
-```
-Run `php -v` afterwards. If the steps were done correctly, the version number should match the server's php version.
-
 ## Installation
 
 The following steps assume that the Prerequisites mentioned above are met.
@@ -90,6 +76,4 @@ The following steps assume that the Prerequisites mentioned above are met.
 
 No further changes to your Magento 2 configurations should be necessary as LiteMage honors the same cacheable settings as varnish in the layout xml files.
 
-## Todo
-* Add Cache Warm up
 
