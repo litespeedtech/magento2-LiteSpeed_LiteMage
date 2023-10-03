@@ -329,7 +329,7 @@ class Config
 				$this->_conf[self::CFG_PURGE_PROD_AFTER_ORDER] = $purge_prod;
 
 
-				$this->load_conf_field_array(self::CFG_IGNORED_PURGE_TAGS, $lm['purge']);
+				$this->load_conf_field_array(self::CFG_IGNORED_PURGE_TAGS, $lm['purge'] ?? []);
 
                 $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?? 0;
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
