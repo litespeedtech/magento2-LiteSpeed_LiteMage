@@ -100,6 +100,12 @@
                     <label>LiteMage Server IP</label>
                     <comment>If LiteMage is behind a CDN or proxy server, use this setting to specify the location of the LiteMage Cache server. This way, a cache flush can access the LiteMage server directly, instead of going through the proxy.</comment>
                 </field>
+                <field id="basic_auth" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Basic Authentication</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>If your site uses Basic Authentication, the CLI flush command will send an HTTPS request. 
+                        Without a username and password, the request will fail. Please input credentials in the "username:password" format.</comment>
+                </field>
             </group>
         </section>
     </system>

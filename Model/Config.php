@@ -39,6 +39,7 @@ class Config
 	private const CFG_DEBUGON = 'debug' ;
     private const CFG_FRONT_STORE_ID = 'frontend_store_id';
     private const CFG_SERVER_IP = 'server_ip';
+	private const CFG_BASIC_AUTH = 'basic_auth';
 
     //const CFG_ADMINIPS = 'admin_ips';
     private const CFG_PUBLICTTL = 'public_ttl';
@@ -279,6 +280,17 @@ class Config
         return $this->getConf(self::CFG_SERVER_IP);
     }
 
+	public function getBasicAuth()
+	{
+		$auth = $this->getConf(self::CFG_BASIC_AUTH);
+		if ($auth) {
+			if (!strpos($auth, ':')) {
+				throw new \Exception("Invalid Basic Authentication format. Please use \"user:password\" format in LiteMage config - Developer Settings.");
+			}
+		}
+		return $auth;
+	}
+
     protected function _initConf( $type = '' )
     {
         $this->_conf = [];
@@ -312,8 +324,10 @@ class Config
                 if ($debugon) {
                     $this->_debug_trace = $lm['dev']['debug_trace'] ?? 0;
                 }
+
                 $this->_conf[self::CFG_FRONT_STORE_ID] = $lm['dev'][self::CFG_FRONT_STORE_ID] ?? 1; // default is store 1
                 $this->_conf[self::CFG_SERVER_IP] = $lm['dev'][self::CFG_SERVER_IP] ?? '';
+				$this->_conf[self::CFG_BASIC_AUTH] = $lm['dev'][self::CFG_BASIC_AUTH] ?? '';
                 $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
 
                 $this->load_conf_field_array(self::CFG_CONTEXTBYPASS, $lm['general']);

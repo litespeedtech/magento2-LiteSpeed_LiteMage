@@ -12,7 +12,6 @@
             <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
         </arguments>
     </type>
-    
     <type name="Litespeed\Litemage\Logger\Logger">
         <arguments>
             <argument name="name" xsi:type="string">LiteMage</argument>
@@ -21,4 +20,20 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="litemageFlushTagsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushTags</item>
+                <item name="litemageFlushProdsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushProds</item>
+                <item name="litemageFlushCatsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushCats</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Config\Model\Config\TypePool">
+        <arguments>
+            <argument name="sensitive" xsi:type="array">
+                <item name="litemage/dev/basic_auth" xsi:type="string">1</item>
+            </argument>
+        </arguments>
+    </type>    
 </config>

@@ -27,6 +27,7 @@
                 <debug_trace>0</debug_trace>
                 <frontend_store_id>1</frontend_store_id>
                 <server_ip/>
+                <basic_auth backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
             </dev>
         </litemage>
     </default>
