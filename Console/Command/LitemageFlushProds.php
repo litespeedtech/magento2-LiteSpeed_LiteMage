@@ -22,12 +22,12 @@ class LitemageFlushProds extends AbstractLitemageCommand
      */
     protected function configure()
     {
-		$this->type = 'prods';
+		$this->type = 'product_id';
 		$this->tag_format = '/^[\d+]+$/';
         $this->setName('cache:litemage:flush:prods');
         $this->setDescription('Flushes LiteMage cache by a list of product IDs');
         $this->addArgument(
-            'prods',
+            $this->type,
             InputArgument::IS_ARRAY,
             'Space-separated list of product IDs (integer).'
         );
@@ -40,7 +40,6 @@ class LitemageFlushProds extends AbstractLitemageCommand
 		$this->tags = array_map(function($value) {
 			return 'P' . $value;
 		}, $this->tags);
-
 	}
 
 	protected function getDisplayMessage()

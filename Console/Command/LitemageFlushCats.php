@@ -22,12 +22,12 @@ class LitemageFlushCats extends AbstractLitemageCommand
      */
     protected function configure()
     {
-		$this->type = 'cats';
+		$this->type = 'category_id';
 		$this->tag_format = '/^[\d+]+$/';
         $this->setName('cache:litemage:flush:cats');
         $this->setDescription('Flushes LiteMage cache by a list of category IDs');
         $this->addArgument(
-            'cats',
+            $this->type,
             InputArgument::IS_ARRAY,
             'Space-separated list of category IDs (integer).'
         );
@@ -38,7 +38,7 @@ class LitemageFlushCats extends AbstractLitemageCommand
 	{
 		parent::getInputList($input);
 		$this->tags = array_map(function($value) {
-			return 'C' . $value;
+			return 'C_' . $value;
 		}, $this->tags);
 	}
 

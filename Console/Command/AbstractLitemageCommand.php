@@ -87,7 +87,7 @@ abstract class AbstractLitemageCommand extends Command
 	{
         $list = $input->getArgument($this->type);
 		if (!empty($list)) {
-            $list = array_filter(array_map('trim', $list), 'strlen');
+            $list = array_filter(array_map('trim', array_unique($list)), 'strlen');
         }
 		if (empty($list)) {
 			throw new \InvalidArgumentException(
@@ -99,6 +99,7 @@ abstract class AbstractLitemageCommand extends Command
 				"Tag [$tag] contains invalid characters.");
 			}
 		}
+        
 		$this->tags = $list;
 	}
 

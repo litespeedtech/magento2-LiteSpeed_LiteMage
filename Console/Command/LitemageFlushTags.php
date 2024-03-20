@@ -21,12 +21,12 @@ class LitemageFlushTags extends AbstractLitemageCommand
      */
     protected function configure()
     {
-		$this->type = 'tags';
+		$this->type = 'tag';
 		$this->tag_format = '/^[a-zA-Z\d_-]+$/';
         $this->setName('cache:litemage:flush:tags');
         $this->setDescription('Flushes LiteMage cache by a list of tags');
         $this->addArgument(
-            'tags',
+            $this->type,
             InputArgument::IS_ARRAY,
             'Space-separated list of cache tags.'
         );

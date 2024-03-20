@@ -26,6 +26,7 @@
                 <item name="litemageFlushTagsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushTags</item>
                 <item name="litemageFlushProdsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushProds</item>
                 <item name="litemageFlushCatsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushCats</item>
+                <item name="litemageCliFlushCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageCliFlush</item>
             </argument>
         </arguments>
     </type>

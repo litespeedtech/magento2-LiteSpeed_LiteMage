@@ -18,9 +18,9 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 	protected $config;
 
 	/**
-	 * @var \Litespeed\Litemage\Helper\Data
+	 * @var \Litespeed\Litemage\Model
 	 */
-	protected $helper;
+	protected $cachePurge;
 
 	/**
 	 * @var \Magento\Framework\Url
@@ -33,40 +33,42 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 	private $_reason;
 
 	/**
-	 * Core registry
-	 *
-	 * @var \Magento\Framework\Registry
-	 */
-	protected $coreRegistry;
-	/**
 	 *
 	 * @var bool
 	 */
 	private $enabled;
-
+    
+    private $curl_options;
+    
+    private const BATCH_SIZE = 60;
+    
 	/**
 	 * @param \Litespeed\Litemage\Model\Config $config,
-	 * @param \Magento\Framework\Registry $coreRegistry,
-	 * @param \Magento\Store\Model\StoreManagerInterface $storeManager,
 	 * @param \Magento\Framework\Url $url,
-	 * @param \Litespeed\Litemage\Helper\Data $helper
+	 * @param \Litespeed\Litemage\Model\CachePurge $cachePurge
 	 * @throws \Magento\Framework\Exception\IntegrationException
 	 */
 	public function __construct(\Litespeed\Litemage\Model\Config $config,
-			\Magento\Framework\Registry $coreRegistry,
 			\Magento\Framework\Url $url,
-			\Litespeed\Litemage\Helper\Data $helper)
+			\Litespeed\Litemage\Model\CachePurge $cachePurge)
 	{
 		if (PHP_SAPI !== 'cli') {
 			throw new \Magento\Framework\Exception\IntegrationException('Should only invoke from command line');
 		}
 		$this->config = $config;
-		$this->coreRegistry = $coreRegistry;
 		$this->url = $url;
-		$this->helper = $helper;
-		$this->enabled = $this->config->moduleEnabled();
+		$this->cachePurge = $cachePurge;
+		$this->enabled = $this->config->moduleEnabled() && !$this->config->isCliPurgeDisabled();
 	}
 
+    /**
+     * Only send purge request during destruct, allow bulk purge
+     */
+    function __destruct()
+    {
+        $this->sendPurgeRequest();
+    }
+    
 	/**
 	 * Flush All Litemage cache
 	 * @param \Magento\Framework\Event\Observer $observer
@@ -80,88 +82,35 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 		}
 
 		$event = $observer->getEvent();
-		$tags = $event->getTags();
-		$this->_reason = $event->getReason();
-
-		if (in_array('*', $tags)) {
-			if ($this->coreRegistry->registry('shellPurgeAll') === null) {
-				$this->coreRegistry->register('shellPurgeAll', 1);
-				$this->_shellPurge(['all' => 1]);
-			}
-		} else {
-			$tags = array_unique($tags);
-			$used = [];
-			foreach ($tags as $tag) {
-				if ($this->coreRegistry->registry("shellPurge_{$tag}") === null) {
-					$this->coreRegistry->register("shellPurge_{$tag}", 1);
-					$used[] = $tag;
-				}
-			}
-			if (!empty($used)) {
-				$list = array_chunk($used, 50); // split to avoid url too long
-				foreach ($list as $l) {
-					$this->_shellPurge(['tags' => implode(',', $l)]);
-				}
-			}
-		}
+        $this->cachePurge->addPurgeTags($event->getTags(), 'CLI ' . $event->getReason());
+        if ($this->cachePurge->getPurgeTagsCount() >= self::BATCH_SIZE) {
+            $this->sendPurgeRequest();
+        }
+        // remaining will be handled by destructor
 	}
+    
+    private function sendPurgeRequest()
+    {
+        while ($this->cachePurge->getPurgeTagsCount() >= self::BATCH_SIZE) {
+            $tags = $this->cachePurge->grabPurgeTags(self::BATCH_SIZE);
+    		$list = array_chunk($tags, self::BATCH_SIZE); // split to avoid url too long
+            foreach ($list as $l) {
+                $this->_shellPurge(['tags' => implode(',', $l)]);
+            }
+		}
+    }
 
 	private function _shellPurge($params)
 	{
 		$msg = 'FlushCacheByCli ';
 		try {
-			$server_ip = $this->config->getServerIp();
-			$storeId = $this->config->getFrontStoreId();
-			$base = $this->url->getUrl('litemage/shell/purge', ['_scope' => $storeId, '_nosid' => true]);
-			$headers = [];
-			if ($server_ip) {
-				$pattern = "/:\/\/([^\/^:]+)(\/|:)?/";
-				if (preg_match($pattern, $base, $m)) {
-					$domain = $m[1];
-					$pos = strpos($base, $domain);
-					$base = substr($base, 0, $pos) . $server_ip
-							. substr($base, $pos + strlen($domain));
-					$headers[] = "Host: $domain";
-				}
-			}
-			$stat = stat(__FILE__);
-			$stat[] = date('l jS F Y h');
-			$params['secret'] = md5(print_r($stat, true));
-			//$uri = $base . 'litemage/shell/purge?' . http_build_query($params);
-			$uri = $base . '?' . http_build_query($params);
-			$msg .= sprintf('%s url=%s ', $this->_reason, $uri);
-
+            $options = $this->getCurlOptions($params);
+			$msg .= sprintf('%s url=%s ', $this->_reason, $options[CURLOPT_URL]);
 			$result = 'OK';
-
 
 			$ch = curl_init();
 			// cannot use POST due to csrf validation
-			$options = [CURLOPT_CUSTOMREQUEST => 'GET',
-				CURLOPT_URL => $uri,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_HEADER => false,
-				CURLOPT_TIMEOUT => 180,
-				CURLOPT_USERAGENT => 'litemage_walker',
-			];
-			if (strpos($uri, 'https://') !== false) {
-				$options[CURLOPT_SSL_VERIFYHOST] = 0;
-				$options[CURLOPT_SSL_VERIFYPEER] = 0;
-				if (defined('CURLOPT_SSL_VERIFYSTATUS')) { // not avail in old lib
-					$options[CURLOPT_SSL_VERIFYSTATUS] = false;
-				}
-			}
-
-			$auth = $this->config->getBasicAuth();
-			if ($auth) {
-				$options[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;
-				$options[CURLOPT_USERPWD] = $auth;
-			}
-
 			curl_setopt_array($ch, $options);
-			if (!empty($headers)) {
-				curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-			}
 
 			$data = curl_exec($ch);
 			if (!curl_errno($ch)) {
@@ -188,9 +137,68 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 			$msg .= 'Exception ' . $result;
 		}
 
-		$this->helper->debugLog($msg);
-		$this->helper->debugTrace('shellpurge');
-		echo "Flush LiteMage Cache by cli - $result \n";
+		$this->cachePurge->debugLog($msg);
+		$this->cachePurge->debugTrace('shellpurge');
+		echo "Flush LiteMage Cache by CLI - $result \n";
 	}
+    
+    private function getCurlOptions($params)
+    {
+        if ($this->curl_options == null) {
+			// cannot use POST due to csrf validation
+			$options = [CURLOPT_CUSTOMREQUEST => 'GET',
+				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_HEADER => false,
+				CURLOPT_TIMEOUT => 180,
+				CURLOPT_USERAGENT => 'litemage_walker',
+			];
+
+            $server_ip = $this->config->getServerIp();
+            $storeId = $this->config->getFrontStoreId();
+            $base = $this->url->getUrl('litemage/shell/purge', ['_scope' => $storeId, '_nosid' => true]);
+            if ($server_ip) {
+                $pattern = "/:\/\/([^\/^:]+)(\/|:)?/";
+                if (preg_match($pattern, $base, $m)) {
+                    $domain = $m[1];
+                    $pos = strpos($base, $domain);
+                    $base = substr($base, 0, $pos) . $server_ip
+                            . substr($base, $pos + strlen($domain));
+    				$options[CURLOPT_HTTPHEADER] = ["Host: $domain"];
+                }
+            }
+            
+            $options[CURLOPT_URL] = $base;
+            
+			if (strpos($base, 'https://') !== false) {
+				$options[CURLOPT_SSL_VERIFYHOST] = 0;
+				$options[CURLOPT_SSL_VERIFYPEER] = 0;
+				if (defined('CURLOPT_SSL_VERIFYSTATUS')) { // not avail in old lib
+					$options[CURLOPT_SSL_VERIFYSTATUS] = false;
+				}
+			}
+            
+			$auth = $this->config->getBasicAuth();
+			if ($auth) {
+				$options[CURLOPT_HTTPAUTH] = CURLAUTH_BASIC;
+				$options[CURLOPT_USERPWD] = $auth;
+			}
+
+            $this->curl_options = $options;
+        } else {
+            $options = $this->curl_options;
+        }
+        
+        $stat = stat(__FILE__);
+        $stat[] = date('l jS F Y h');
+        $params['secret'] = md5(print_r($stat, true));
+        $base = $this->curl_options[CURLOPT_URL];
+        
+        //$uri = $base . 'litemage/shell/purge?' . http_build_query($params);
+        $uri = $base . '?' . http_build_query($params);
+        
+        $options[CURLOPT_URL] = $uri; // each time uri is different
+        return $options;
+    }
 
 }

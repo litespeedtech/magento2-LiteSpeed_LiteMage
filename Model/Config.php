@@ -34,6 +34,7 @@ class Config
 	private const CFG_PURGE_PROD_AFTER_ORDER = 'purge_prod_after_order';
 	private const CFG_PURGE_PARENT_PROD_AFTER_ORDER = 'purge_parent_prod_after_order';
 	private const CFG_IGNORED_PURGE_TAGS = 'ignored_purge_tags';
+    private const CFG_DISABLE_CLI_PURGE = 'disable_cli_purge';
 
 	// dev
 	private const CFG_DEBUGON = 'debug' ;
@@ -254,6 +255,11 @@ class Config
     {
         return $this->getConf(self::CFG_IGNORED_PURGE_TAGS);
     }
+    
+    public function isCliPurgeDisabled()
+    {
+        return ($this->getConf(self::CFG_DISABLE_CLI_PURGE) == 1);
+    }
 
     public function getProdEditNoPurgeCats()
     {
@@ -342,8 +348,8 @@ class Config
 				}
 				$this->_conf[self::CFG_PURGE_PROD_AFTER_ORDER] = $purge_prod;
 
-
 				$this->load_conf_field_array(self::CFG_IGNORED_PURGE_TAGS, $lm['purge'] ?? []);
+                $this->_conf[self::CFG_DISABLE_CLI_PURGE] = $lm['purge'][self::CFG_DISABLE_CLI_PURGE] ?? 0;
 
                 $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?? 0;
                 $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');

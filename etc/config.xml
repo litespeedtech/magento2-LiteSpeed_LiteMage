@@ -20,6 +20,7 @@
                 <purge_prod_after_order>1</purge_prod_after_order>
                 <purge_parent_prod_after_order>1</purge_parent_prod_after_order>
                 <ignored_purge_tags>compare_item_*, wishlist_*</ignored_purge_tags>
+                <disable_cli_purge>0</disable_cli_purge>
             </purge>
             <dev>
                 <debug>0</debug>

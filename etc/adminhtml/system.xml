@@ -69,6 +69,11 @@
                         Use a * as a wildcard at the end of a tag to group tags with common starting characters. 
                         Note: Ignored Cache Tags are automatically included in this list. Only add tags that are not already in that list.</comment>
                 </field>
+                <field id="disable_cli_purge" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Disable CLI Purge</label>
+                    <comment>When disabled, LiteMage Cache purge events initiated from the command line will be ignored. CLI purge can be temporarily disabled while the system is syncing with an outside ERP system. This avoids constant purge commands slowing down the sync process. After the sync, you can enable CLI purge again and then Purge All.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
             <group id="dev" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>Developer Settings</label>

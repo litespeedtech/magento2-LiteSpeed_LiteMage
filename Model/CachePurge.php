@@ -273,5 +273,27 @@ class CachePurge
 		}
 		return $filtered;
     }
+    
+    public function getPurgeTagsCount()
+    {
+        return count($this->_purgeTags);
+    }
 
+    /**
+     * retrieve the specified number of tags and reduce the purge tags queue
+     * @param int $limit 0 means no_limit
+     * @return array
+     */
+	public function grabPurgeTags($limit=0)
+	{
+        if ($limit == 0 || $limit >= count($this->_purgeTags)) {
+            $retrieved = $this->_purgeTags;
+            $this->_purgeTags = [];
+        } else {
+            $retrieved = array_slice($this->_purgeTags, 0, $limit);
+            $this->_purgeTags = array_slice($this->_purgeTags, $limit);
+        }
+        return $retrieved;
+	}
+    
 }
