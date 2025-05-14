@@ -9,21 +9,25 @@
 
 <?php if ($block->needAjax()):?>
 <script>
-    require(['jquery'],function(){
-        jQuery(document).ready(function() {
-            if (document.cookie.indexOf('litemage-custvary') == -1) {
-                jQuery.ajax({
-                    url: '<?php echo $block->getCheckUrl();?>',
-                    type: 'POST',
-                    success: function(response){
-                        if(response.ajaxReload){
-                            window.location.reload(true);
-                        }
-                    }
-                });
-                return false;
-            };
+var shouldReload = function(){
+    if (document.cookie.indexOf('litemage-custvary') == -1) {
+        fetch('<?php echo $block->getCheckUrl();?>', {
+            method: 'POST',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ajaxReload) {
+                window.location.reload(true);
+            }
         });
-    });
+        return false;
+    }
+};
+
+if (document.readyState === "complete" || (document.readyState !== "loading" && !document.documentElement.doScroll)) {
+    shouldReload();
+} else {
+    document.addEventListener("DOMContentLoaded", shouldReload);
+}
 </script>
 <?php endif?>
