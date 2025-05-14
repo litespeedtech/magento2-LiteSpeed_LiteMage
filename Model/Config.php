@@ -50,7 +50,6 @@ class Config
     protected $_conf = [];
     protected $_userModuleEnabled = -2 ; // -2: not set, true, false
     protected $_esiTag;
-    protected $_isDebug ;
     protected $_bypassedContext = [];
 
     /**
@@ -224,7 +223,7 @@ class Config
     public function getConf( $name, $type = '' )
     {
         if ( ($type == '' && ! isset($this->_conf[$name])) || ($type != '' && ! isset($this->_conf[$type])) ) {
-            $this->_initConf($type) ;
+            $this->_initConf() ;
         }
 
         if ( $type == '' ) {
@@ -297,63 +296,57 @@ class Config
 		return $auth;
 	}
 
-    protected function _initConf( $type = '' )
+    protected function _initConf()
     {
-        $this->_conf = [];
-
-        if ( ! isset($this->_conf['defaultlm']) ) {
-            $this->_conf['defaultlm'] = $this->scopeConfig->getValue(self::CFGXML_DEFAULTLM) ;
+        if ( isset($this->_conf['defaultlm']) ) {
+            return;
         }
+        $this->_conf['defaultlm'] = $this->scopeConfig->getValue(self::CFGXML_DEFAULTLM) ;
         $lm = $this->_conf['defaultlm'];
         $pattern = "/[\s,]+/" ;
 
-        switch ( $type ) {
-
-            default:
-                $debugon = $lm['dev'][self::CFG_DEBUGON] ?? 0;
-                if ($debugon && isset($lm['dev']['debug_ips'])) {
-                    // check ips
-                    $debugips = trim($lm['dev']['debug_ips']);
-                    if (PHP_SAPI !== 'cli' && $debugips) {
-                        $ips = array_unique(preg_split($pattern, $debugips, 0, PREG_SPLIT_NO_EMPTY));
-                        if (!empty($ips)) {
-                            $ip = $this->_getIp();
-                            if (!in_array($ip, $ips)) {
-                                $debugon = 0;
-                            }
-                        }
+        $debugon = $lm['dev'][self::CFG_DEBUGON] ?? 0;
+        if ($debugon && isset($lm['dev']['debug_ips'])) {
+            // check ips
+            $debugips = trim($lm['dev']['debug_ips']);
+            if (PHP_SAPI !== 'cli' && $debugips) {
+                $ips = array_unique(preg_split($pattern, $debugips, 0, PREG_SPLIT_NO_EMPTY));
+                if (!empty($ips)) {
+                    $ip = $this->_getIp();
+                    if (!in_array($ip, $ips)) {
+                        $debugon = 0;
                     }
                 }
-
-                $this->_conf[self::CFG_DEBUGON] = $debugon ;
-                $this->_isDebug = $debugon;
-                if ($debugon) {
-                    $this->_debug_trace = $lm['dev']['debug_trace'] ?? 0;
-                }
-
-                $this->_conf[self::CFG_FRONT_STORE_ID] = $lm['dev'][self::CFG_FRONT_STORE_ID] ?? 1; // default is store 1
-                $this->_conf[self::CFG_SERVER_IP] = $lm['dev'][self::CFG_SERVER_IP] ?? '';
-				$this->_conf[self::CFG_BASIC_AUTH] = $lm['dev'][self::CFG_BASIC_AUTH] ?? '';
-                $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
-
-                $this->load_conf_field_array(self::CFG_CONTEXTBYPASS, $lm['general']);
-                $this->load_conf_field_array(self::CFG_IGNORED_BLOCKS, $lm['general']);
-                $this->load_conf_field_array(self::CFG_IGNORED_TAGS, $lm['general']);
-
-				$this->_conf[self::CFG_PROD_EDIT_NO_PURGE_CATS] = $lm['purge'][self::CFG_PROD_EDIT_NO_PURGE_CATS] ?? 0;
-				$purge_prod = $lm['purge'][self::CFG_PURGE_PROD_AFTER_ORDER] ?? 1; // 0:no, 1:when out of stock, 2: always
-				$purge_parent = $lm['purge'][self::CFG_PURGE_PARENT_PROD_AFTER_ORDER] ?? 0;
-				if ($purge_prod && $purge_parent) {
-					$purge_prod |= 4;
-				}
-				$this->_conf[self::CFG_PURGE_PROD_AFTER_ORDER] = $purge_prod;
-
-				$this->load_conf_field_array(self::CFG_IGNORED_PURGE_TAGS, $lm['purge'] ?? []);
-                $this->_conf[self::CFG_DISABLE_CLI_PURGE] = $lm['purge'][self::CFG_DISABLE_CLI_PURGE] ?? 0;
-
-                $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?? 0;
-                $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
+            }
         }
+
+        $this->_conf[self::CFG_DEBUGON] = $debugon ;
+        if ($debugon) {
+            $this->_debug_trace = $lm['dev']['debug_trace'] ?? 0;
+        }
+
+        $this->_conf[self::CFG_FRONT_STORE_ID] = $lm['dev'][self::CFG_FRONT_STORE_ID] ?? 1; // default is store 1
+        $this->_conf[self::CFG_SERVER_IP] = $lm['dev'][self::CFG_SERVER_IP] ?? '';
+        $this->_conf[self::CFG_BASIC_AUTH] = $lm['dev'][self::CFG_BASIC_AUTH] ?? '';
+        $this->_conf[self::CFG_PUBLICTTL] = $this->scopeConfig->getValue(self::STOREXML_PUBLICTTL);
+
+        $this->load_conf_field_array(self::CFG_CONTEXTBYPASS, $lm['general']);
+        $this->load_conf_field_array(self::CFG_IGNORED_BLOCKS, $lm['general']);
+        $this->load_conf_field_array(self::CFG_IGNORED_TAGS, $lm['general']);
+
+        $this->_conf[self::CFG_PROD_EDIT_NO_PURGE_CATS] = $lm['purge'][self::CFG_PROD_EDIT_NO_PURGE_CATS] ?? 0;
+        $purge_prod = $lm['purge'][self::CFG_PURGE_PROD_AFTER_ORDER] ?? 1; // 0:no, 1:when out of stock, 2: always
+        $purge_parent = $lm['purge'][self::CFG_PURGE_PARENT_PROD_AFTER_ORDER] ?? 0;
+        if ($purge_prod && $purge_parent) {
+            $purge_prod |= 4;
+        }
+        $this->_conf[self::CFG_PURGE_PROD_AFTER_ORDER] = $purge_prod;
+
+        $this->load_conf_field_array(self::CFG_IGNORED_PURGE_TAGS, $lm['purge'] ?? []);
+        $this->_conf[self::CFG_DISABLE_CLI_PURGE] = $lm['purge'][self::CFG_DISABLE_CLI_PURGE] ?? 0;
+
+        $this->_conf[self::CFG_CUSTOMVARY] = $lm['general'][self::CFG_CUSTOMVARY] ?? 0;
+        $this->_esiTag = array('include' => 'esi:include', 'inline' => 'esi:inline', 'remove' => 'esi:remove');
     }
 
     private function load_conf_field_array($field_name, $holder)
