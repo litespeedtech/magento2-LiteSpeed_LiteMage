@@ -9,18 +9,17 @@
 
 namespace Litespeed\Litemage\Logger;
 
+use DateTimeZone;
+
 /**
  * Class Logger
  */
 class Logger extends \Monolog\Logger
 {
 
-    public function __construct($name, array $handlers = [],
-                                array $processors = [])
+    public function __construct(string $name, array $handlers = [], array $processors = [], ?DateTimeZone $timezone = null)
     {
-        $this->name = $name;
-        $this->handlers = $handlers;
-        $this->processors = $processors;
+        parent::__construct($name, $handlers, $processors, $timezone);
     }
 
 }
