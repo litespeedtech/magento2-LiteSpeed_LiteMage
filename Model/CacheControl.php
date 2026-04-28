@@ -338,7 +338,7 @@ class CacheControl
 			}
         }
         
-        if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable > 0)
+        if (( $responsecode == 200 || $responsecode == 201 || $responsecode == 404) && ($this->_isCacheable > 0)
         ) {
             // cacheable
             $lstags = $this->setCacheTagHeader($response);

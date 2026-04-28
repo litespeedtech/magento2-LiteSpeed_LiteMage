@@ -74,22 +74,22 @@ class Purge extends \Magento\Framework\App\Action\Action
             return 'Abort: LiteMage is not enabled';
         }
         if ($this->httpHeader->getHttpUserAgent() !== 'litemage_walker') {
-            return 'Access denied';
+            return 'Access denied (User-Agent mismatch): ' . $this->httpHeader->getHttpUserAgent();
         }
 
         $req = $this->getRequest();
         $secret = $req->getParam('secret');
 
         if (strlen((string)$secret) != 32) {
-            return 'Invalid request';
+            return 'Invalid request: secret length is ' . strlen((string)$secret);
         }
         $file = dirname(dirname(dirname(__FILE__))) . '/Observer/FlushCacheByCli.php';
-        $stat = stat($file);
-        $stat[] = date('l jS F Y h');
-        $secret1 = md5(print_r($stat, true));
+        $stat_str = filemtime($file) . filesize($file);
+        $secret1 = md5($stat_str . gmdate('Y-m-d-H'));
+        $secret2 = md5($stat_str . gmdate('Y-m-d-H', time() - 3600));
 
-        if ($secret != $secret1) {
-            return 'Invalid token';
+        if ($secret != $secret1 && $secret != $secret2) {
+            return 'Invalid token (Timezone/Stat mismatch)';
         }
 
         $this->_tags = [];

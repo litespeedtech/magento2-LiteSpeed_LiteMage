@@ -116,10 +116,10 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 			$data = curl_exec($ch);
 			if (!curl_errno($ch)) {
 				$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-				if ($http_code == 200) {
+				if ($http_code == 200 || $http_code == 201) {
 					$result = 'OK' . "\n$data";
 				} else {
-					$result = ' Unexpected HTTP code: ' . $http_code;
+					$result = ' Unexpected HTTP code: ' . $http_code . ' Body: ' . $data;
 					if ($http_code == 503) {
 						if (strpos($data, 'maintenance')) {
 							$result .= "\n*** Failed to send LiteMage flush request, please add your backend server IP to maintenance allowed ips.";
@@ -157,7 +157,11 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
 
             $server_ip = $this->config->getServerIp();
             $storeId = $this->config->getFrontStoreId();
-            $base = $this->url->getUrl('litemage/cli/purge', ['_scope' => $storeId, '_nosid' => true]);
+            try {
+                $base = $this->url->getUrl('litemage/cli/purge', ['_scope' => $storeId, '_nosid' => true]);
+            } catch (\Exception $e) {
+                $base = $this->url->getUrl('litemage/cli/purge', ['_nosid' => true]);
+            }
             if ($server_ip) {
                 $pattern = "/:\/\/([^\/^:]+)(\/|:)?/";
                 if (preg_match($pattern, $base, $m)) {
@@ -190,9 +194,7 @@ class FlushCacheByCli implements \Magento\Framework\Event\ObserverInterface
             $options = $this->curl_options;
         }
         
-        $stat = stat(__FILE__);
-        $stat[] = date('l jS F Y h');
-        $params['secret'] = md5(print_r($stat, true));
+        $params['secret'] = md5(filemtime(__FILE__) . filesize(__FILE__) . gmdate('Y-m-d-H'));
         $base = $this->curl_options[CURLOPT_URL];
         
         //$uri = $base . 'litemage/shell/purge?' . http_build_query($params);
