@@ -23,6 +23,9 @@
     <event name="adminhtml_cache_refresh_type">
         <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
     </event>
+    <event name="assign_theme_to_stores_after">
+        <observer name="litemage_purge_all" instance="Litespeed\Litemage\Observer\FlushAllCache"/>
+    </event>
     <!-- flush by tags -->
     <event name="clean_cache_by_tags">
         <observer name="litemage_purge_tags" instance="Litespeed\Litemage\Observer\FlushCacheByTags"/>
