@@ -41,13 +41,9 @@ class Handler extends \Magento\Framework\Logger\Handler\Base
     private function getLogTag()
     {
         $tag = 'LiteMage ';
-        //$cronUserAgent = \Litespeed\Litemage\Model\Cron::USER_AGENT;
 
         if (isset($_SERVER['REMOTE_ADDR'])) {
             // from server http request
-            /* if ($this->_httpHeader->getHttpUserAgent() == $cronUserAgent) {
-              $this->_debugTag .= $cronUserAgent . ':';
-              } */
             $msec = microtime();
             $msec1 = substr($msec, 2, strpos($msec, ' ') - 2);
             $tag .= sprintf('[%s:%s:%s]', $_SERVER['REMOTE_ADDR'],

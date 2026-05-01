@@ -53,20 +53,32 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
         $cacheTags = '';
         $tags = $this->litemageCache->getElementCacheTags($layout, $blockName);
         if (!empty($tags)) {
-            $cacheTags = ' cache-tag="' . implode(',', $tags) . '"';
+            $cacheTags = ' cache-tag="' . $this->escapeAttribute(implode(',', $tags)) . '"';
         }
 
-        $uri = sprintf('<esi:include src="%s"%s cache-control="%s"/>', $url,
-                       $cacheTags, $access);
+        $uri = sprintf('<esi:include src="%s"%s cache-control="%s"/>',
+                       $this->escapeAttribute($url),
+                       $cacheTags,
+                       $this->escapeAttribute($access));
 
         $this->litemageCache->setEsiOn(true);
         $output = $uri; // discard original output
 
         if ($this->helper->debugEnabled()) {
             $this->helper->debugLog('replace esi ; ' . $uri);
-            $output = '<!--litemage_esi start ' . $blockName . '-->' . $uri . '<!-- litemage_esi end -->';
+            $output = '<!--litemage_esi start ' . $this->escapeComment($blockName) . '-->' . $uri . '<!-- litemage_esi end -->';
         }
         $transport->setData('output', $output);
+    }
+
+    protected function escapeAttribute($value)
+    {
+        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    protected function escapeComment($value)
+    {
+        return str_replace(['--', '<', '>'], '', (string)$value);
     }
 
     /**
@@ -88,7 +100,7 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
         $name = $event->getElementName();
 
         if (in_array($name, $this->_injectBlocks)) {
-            $this->_replaceEsi($name, $layout, $event->getTransport());
+            $this->_replaceEsi($name, $layout, 'public', $event->getTransport());
         } else {
             /** @var \Magento\Framework\View\Element\AbstractBlock $block */
             $block = $layout->getBlock($name);

@@ -9,10 +9,11 @@
 
 namespace Litespeed\Litemage\Controller\Block;
 
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 
-class Esi extends \Magento\Framework\App\Action\Action
+class Esi implements HttpGetActionInterface
 {
 
     /**
@@ -26,88 +27,158 @@ class Esi extends \Magento\Framework\App\Action\Action
     protected $litemageCache;
 
     /**
-     * @param \Magento\Framework\App\Action\Context $context
+     * @var \Litespeed\Litemage\Model\EsiRequestAuth
+     */
+    protected $esiRequestAuth;
+
+    /**
+     * @var \Magento\Framework\App\Request\Http
+     */
+    protected $request;
+
+    /**
+     * @var \Magento\Framework\App\ViewInterface
+     */
+    protected $view;
+
+    /**
+     * @var \Magento\Framework\Controller\Result\RawFactory
+     */
+    protected $resultRawFactory;
+
+    /**
      * @param \Magento\Framework\Translate\InlineInterface $translateInline
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
+     * @param \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth
+     * @param \Magento\Framework\App\Request\Http $request
+     * @param \Magento\Framework\App\ViewInterface $view
+     * @param \Magento\Framework\Controller\Result\RawFactory $resultRawFactory
      */
     public function __construct(
-            \Magento\Framework\App\Action\Context $context,
             \Magento\Framework\Translate\InlineInterface $translateInline,
-            \Litespeed\Litemage\Model\CacheControl $litemageCache
+            \Litespeed\Litemage\Model\CacheControl $litemageCache,
+            \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth,
+            \Magento\Framework\App\Request\Http $request,
+            \Magento\Framework\App\ViewInterface $view,
+            \Magento\Framework\Controller\Result\RawFactory $resultRawFactory
     )
     {
-        parent::__construct($context);
         $this->translateInline = $translateInline;
         $this->litemageCache = $litemageCache;
+        $this->esiRequestAuth = $esiRequestAuth;
+        $this->request = $request;
+        $this->view = $view;
+        $this->resultRawFactory = $resultRawFactory;
     }
 
     /**
-     * Returns block content as part of ESI request from Varnish
+     * Returns block content as part of an ESI request.
      *
-     * @return void
+     * @return \Magento\Framework\Controller\Result\Raw
      */
     public function execute()
     {
-        $request = $this->getEsiRequest();
-        
+        try {
+            $request = $this->getEsiRequest();
+        } catch (LocalizedException $e) {
+            return $this->errorExit($e->getMessage(), 403);
+        }
+
         $block_name = $request->getParam('b');
         $handle = $request->getParam('h');
 
-        if ($handle && $block_name) {
-            $this->sendBlockContent($handle, $block_name);
+        if (!$this->esiRequestAuth->validateBlockName($block_name)
+            || !$this->esiRequestAuth->validateEncodedHandles($handle)
+        ) {
+            return $this->errorExit('Invalid ESI request', 400);
         }
+
+        $authError = $this->esiRequestAuth->validateParams([
+            'b' => $block_name,
+            'h' => $handle,
+            'sig' => $request->getParam('sig'),
+        ]);
+        if ($authError !== null) {
+            return $this->errorExit($authError, 403);
+        }
+
+        if ($handle && $block_name) {
+            return $this->sendBlockContent($handle, $block_name);
+        }
+
+        return $this->errorExit('Invalid ESI request', 400);
     }
     
     protected function sendBlockContent($handle, $block_name)
     {
         $handles = $this->litemageCache->decodeEsiHandles($handle);
 
-        $this->_view->loadLayout($handles, true, true, false);
+        $this->view->loadLayout($handles, true, true, false);
 
-        $layout = $this->_view->getLayout();
+        $layout = $this->view->getLayout();
 
         if (!$layout->hasElement($block_name)) {
-            return;
+            return $this->errorExit('Invalid ESI block', 404);
         }
         
         $block = $layout->getBlock($block_name);
+        if (!$block instanceof \Magento\Framework\View\Element\AbstractBlock) {
+            return $this->errorExit('Invalid ESI block', 404);
+        }
+
         $blockTtl = $block->getTtl();
         $this->litemageCache->setCacheable($blockTtl, "Render ESI block $block_name $blockTtl");
         
-        $response = $this->getResponse();
         $html = $layout->renderElement($block_name);
         if ($tags = $this->litemageCache->getElementCacheTags($layout, $block_name)) {
             $this->litemageCache->setCacheTags($tags);
         }
 
         $this->translateInline->processResponseBody($html);
-        $response->appendBody($html);
+        return $this->rawResult($html);
     }
 
-	protected function getEsiRequest()
-	{
-        $request = $this->getRequest();
-        
-        $origEsiUrl = $_SERVER['REQUEST_URI'] ;
-		// for lsws
-		$refererUrl = $request->getServer('ESI_REFERER');
-		if (!$refererUrl) {
-			//lslb
-			$refererUrl = $request->getServer('HTTP_ESI_REFERER');
-		}
+    protected function errorExit($errorMesg, $statusCode)
+    {
+        return $this->rawResult($errorMesg, $statusCode);
+    }
 
-		if ( $refererUrl ) {
+    protected function getEsiRequest()
+    {
+        $request = $this->request;
+
+        $origEsiUrl = (string)$request->getRequestUri();
+        // for lsws
+        $refererUrl = $request->getServer('ESI_REFERER');
+        if (!$refererUrl) {
+            // lslb
+            $refererUrl = $request->getServer('HTTP_ESI_REFERER');
+        }
+
+        if ($refererUrl) {
             /** may set original host url later if needed
-			$_SERVER['REQUEST_URI'] = $refererUrl ;
-			$request->setRequestUri($refererUrl) ;
-			$request->setPathInfo() ; */
-		} else {
+            $_SERVER['REQUEST_URI'] = $refererUrl ;
+            $request->setRequestUri($refererUrl) ;
+            $request->setPathInfo() ; */
+        } else {
             throw new LocalizedException(
-                    new Phrase('Illegal ESI entrace "%1"', [$origEsiUrl]));
+                    new Phrase('Illegal ESI entrance "%1"', [$origEsiUrl]));
         }
 
         $this->litemageCache->setEsiRequest();
         return $request;
-	}    
+    }
+
+    /**
+     * @param string $content
+     * @param int $statusCode
+     * @return \Magento\Framework\Controller\Result\Raw
+     */
+    private function rawResult($content, $statusCode = 200)
+    {
+        $result = $this->resultRawFactory->create();
+        $result->setHttpResponseCode($statusCode);
+        return $result->setContents($content);
+    }
     
 }

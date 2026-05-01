@@ -81,6 +81,7 @@ abstract class AbstractLitemageCommand extends Command
 				'reason' => 'cli command: ' . $this->getName()];
 		$this->eventManager->dispatch('litemage_cli_purge', $param);
         $output->writeln($this->getDisplayMessage());
+        return \Magento\Framework\Console\Cli::RETURN_SUCCESS;
 	}
 
 	protected function getInputList(InputInterface $input)

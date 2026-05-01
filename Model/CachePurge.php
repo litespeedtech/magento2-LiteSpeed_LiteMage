@@ -21,6 +21,7 @@ class CachePurge
 
     private const LSHEADER_PURGE = 'X-LiteSpeed-Purge';
     private const LSHEADER_DEBUG_Purge = 'X-LiteMage-Debug-Purge';
+    private const MAX_TAG_HEADER_VALUE_LENGTH = 7500;
 
     /**
      * @var \Litespeed\Litemage\Model\Config
@@ -148,18 +149,40 @@ class CachePurge
             return;
         } 
         
-        $tags = array_unique($this->_purgeTags);
-        // if contains big list, split to multi-headers
-        while (count($tags) > 500) {
-            $tags1 = array_slice($tags, 0, 500);
-            $purgeTags = implode(',', $tags1);
-            $this->setRealPurgeHeaders($response, $purgeTags);
-            $tags = array_slice($tags, 500);
-        }
-        if (count($tags) > 0)  {
-            $purgeTags = implode(',', $tags);
+        foreach ($this->splitTagHeaderValues(array_unique($this->_purgeTags)) as $purgeTags) {
             $this->setRealPurgeHeaders($response, $purgeTags);
         }
+    }
+
+    protected function splitTagHeaderValues(array $tags)
+    {
+        $chunks = [];
+        $current = [];
+        $currentLength = 0;
+
+        foreach ($tags as $tag) {
+            $tag = trim((string)$tag);
+            if ($tag === '') {
+                continue;
+            }
+
+            $tagLength = strlen($tag);
+            $nextLength = $currentLength + ($currentLength ? 1 : 0) + $tagLength;
+            if (!empty($current) && $nextLength > self::MAX_TAG_HEADER_VALUE_LENGTH) {
+                $chunks[] = implode(',', $current);
+                $current = [];
+                $currentLength = 0;
+            }
+
+            $current[] = $tag;
+            $currentLength += ($currentLength ? 1 : 0) + $tagLength;
+        }
+
+        if (!empty($current)) {
+            $chunks[] = implode(',', $current);
+        }
+
+        return $chunks;
     }
 
     protected function setRealPurgeHeaders($response, $purgeTags)

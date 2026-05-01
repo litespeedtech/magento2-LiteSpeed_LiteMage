@@ -8,6 +8,8 @@
 
 namespace Litespeed\Litemage\Model;
 
+use Magento\Customer\Model\Context as CustomerContext;
+
 /**
  * Class Config
  *
@@ -41,6 +43,10 @@ class Config
     private const CFG_FRONT_STORE_ID = 'frontend_store_id';
     private const CFG_SERVER_IP = 'server_ip';
 	private const CFG_BASIC_AUTH = 'basic_auth';
+    private const PROTECTED_VARY_CONTEXT = [
+        CustomerContext::CONTEXT_AUTH,
+        CustomerContext::CONTEXT_GROUP,
+    ];
 
     //const CFG_ADMINIPS = 'admin_ips';
     private const CFG_PUBLICTTL = 'public_ttl';
@@ -150,8 +156,7 @@ class Config
 
     public function licenseEnabled()
     {
-        return ( (isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE'])
-                || (isset($_SERVER['HTTP_X_LITEMAGE']) && $_SERVER['HTTP_X_LITEMAGE']));
+        return isset($_SERVER['X-LITEMAGE']) && $_SERVER['X-LITEMAGE'];
     }
 
     /**
@@ -237,7 +242,7 @@ class Config
 
     public function getBypassedContext()
     {
-        return $this->getConf(self::CFG_CONTEXTBYPASS);
+        return array_diff($this->getConf(self::CFG_CONTEXTBYPASS), self::PROTECTED_VARY_CONTEXT);
     }
 
     public function getIgnoredTags()
@@ -361,14 +366,8 @@ class Config
 
     protected function _getIp()
     {
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } else {
-            $ip = $_SERVER['REMOTE_ADDR'];
-        }
-        return $ip;
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '';
     }
 
 }

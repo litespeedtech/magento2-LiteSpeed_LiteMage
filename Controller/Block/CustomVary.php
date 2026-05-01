@@ -9,7 +9,9 @@
 
 namespace Litespeed\Litemage\Controller\Block;
 
-class CustomVary extends \Magento\Framework\App\Action\Action
+use Magento\Framework\App\Action\HttpGetActionInterface;
+
+class CustomVary implements HttpGetActionInterface
 {
 
     /** @var  \Magento\Framework\Controller\Result\JsonFactory */
@@ -21,17 +23,14 @@ class CustomVary extends \Magento\Framework\App\Action\Action
     protected $litemageCache;
 
     /**
-     * @param \Magento\Framework\App\Action\Context $context
      * @param \Magento\Framework\Controller\Result\JsonFactory $jsonFactory
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      */
     public function __construct(
-            \Magento\Framework\App\Action\Context $context,
             \Magento\Framework\Controller\Result\JsonFactory $jsonFactory,
             \Litespeed\Litemage\Model\CacheControl $litemageCache
     )
     {
-        parent::__construct($context);
         $this->jsonFactory = $jsonFactory;
         $this->litemageCache = $litemageCache;
     }
@@ -48,6 +47,8 @@ class CustomVary extends \Magento\Framework\App\Action\Action
             $ajaxReload = $this->litemageCache->checkCacheVary();
         }
         $result = $this->jsonFactory->create();
+        $result->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0', true);
+        $result->setHeader('Pragma', 'no-cache', true);
         return $result->setData(['success' => true, 'ajaxReload' => $ajaxReload]);
     }
 

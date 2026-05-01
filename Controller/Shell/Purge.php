@@ -9,7 +9,9 @@
 
 namespace Litespeed\Litemage\Controller\Shell;
 
-class Purge extends \Magento\Framework\App\Action\Action
+use Magento\Framework\App\Action\HttpGetActionInterface;
+
+class Purge implements HttpGetActionInterface
 {
 
     /**
@@ -18,14 +20,14 @@ class Purge extends \Magento\Framework\App\Action\Action
     protected $litemagePurge;
 
     /**
-     * @var \Magento\Framework\HTTP\Header
-     */
-    protected $httpHeader;
-
-    /**
      * @var \Litespeed\Litemage\Helper\Data
      */
     protected $helper;
+
+    /**
+     * @var \Litespeed\Litemage\Model\ShellPurgeAuth
+     */
+    protected $shellPurgeAuth;
 
     /**
      * purged tags
@@ -34,63 +36,69 @@ class Purge extends \Magento\Framework\App\Action\Action
     private $_tags;
 
     /**
+     * @var \Magento\Framework\App\Request\Http
+     */
+    protected $request;
+
+    /**
+     * @var \Magento\Framework\Controller\Result\RawFactory
+     */
+    protected $resultRawFactory;
+
+    /**
      * 
-     * @param \Magento\Framework\App\Action\Context $context
-     * @param \Magento\Framework\HTTP\Header $httpHeader
      * @param \Litespeed\Litemage\Helper\Data $helper
+     * @param \Litespeed\Litemage\Model\ShellPurgeAuth $shellPurgeAuth
      * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
+     * @param \Magento\Framework\App\Request\Http $request
+     * @param \Magento\Framework\Controller\Result\RawFactory $resultRawFactory
      */
     public function __construct(
-            \Magento\Framework\App\Action\Context $context,
-            \Magento\Framework\HTTP\Header $httpHeader,
             \Litespeed\Litemage\Helper\Data $helper,
-            \Litespeed\Litemage\Model\CachePurge $litemagePurge
+            \Litespeed\Litemage\Model\ShellPurgeAuth $shellPurgeAuth,
+            \Litespeed\Litemage\Model\CachePurge $litemagePurge,
+            \Magento\Framework\App\Request\Http $request,
+            \Magento\Framework\Controller\Result\RawFactory $resultRawFactory
     )
     {
-        parent::__construct($context);
-        $this->httpHeader = $httpHeader;
         $this->litemagePurge = $litemagePurge;
         $this->helper = $helper;
+        $this->shellPurgeAuth = $shellPurgeAuth;
+        $this->request = $request;
+        $this->resultRawFactory = $resultRawFactory;
     }
 
     /**
-     * Returns block content as part of ESI request from Varnish
+     * Handles signed LiteMage shell purge requests.
      *
-     * @return void
+     * @return \Magento\Framework\Controller\Result\Raw
      */
     public function execute()
     {
         if ($err = $this->_validateReq()) {
-            return $this->_errorExit($err);
+            return $this->_errorExit($err[0], $err[1]);
         }
 
         $this->litemagePurge->addPurgeTags($this->_tags, 'ShellPurgeController');
-        $this->getResponse()->setBody(sprintf("LiteMage purged tags %s \n",
-                                              implode(',', $this->_tags)));
+        return $this->rawResult("LiteMage purge request accepted\n");
     }
 
     private function _validateReq()
     {
         if (!$this->helper->moduleEnabled()) {
-            return 'Abort: LiteMage is not enabled';
-        }
-        if ($this->httpHeader->getHttpUserAgent() !== 'litemage_walker') {
-            return 'Access denied';
+            return ['Abort: LiteMage is not enabled', 503];
         }
 
-        $req = $this->getRequest();
-        $secret = $req->getParam('secret');
-
-        if (strlen($secret) != 32) {
-            return 'Invalid request';
-        }
-        $file = dirname(dirname(dirname(__FILE__))) . '/Observer/FlushCacheByCli.php';
-        $stat = stat($file);
-        $stat[] = date('l jS F Y h');
-        $secret1 = md5(print_r($stat, true));
-
-        if ($secret != $secret1) {
-            return 'Invalid token';
+        $req = $this->request;
+        $authError = $this->shellPurgeAuth->validateParams([
+            'all' => $req->getParam('all'),
+            'tags' => $req->getParam('tags'),
+            'ts' => $req->getParam('ts'),
+            'nonce' => $req->getParam('nonce'),
+            'signature' => $req->getParam('signature'),
+        ]);
+        if ($authError !== null) {
+            return [$authError, 403];
         }
 
         $this->_tags = [];
@@ -98,22 +106,35 @@ class Purge extends \Magento\Framework\App\Action\Action
         if ($req->getParam('all')) {
             $this->_tags[] = '*';
         } elseif ($t = $req->getParam('tags')) {
-            $this->_tags = explode(',', $t);
+            $this->_tags = array_values(array_filter(
+                array_map('trim', explode(',', $t)),
+                'strlen'
+            ));
         }
 
         if (empty($this->_tags)) {
-            return 'Invalid url';
+            return ['Invalid url', 400];
         }
 
         return null;
     }
 
-    private function _errorExit($errorMesg)
+    private function _errorExit($errorMesg, $statusCode)
     {
-        $resp = $this->getResponse();
-        $resp->setHttpResponseCode(500);
-        $resp->setBody($errorMesg);
         $this->helper->debugLog('litemage/shell/purge ErrorExit: ' . $errorMesg);
+        return $this->rawResult($errorMesg, $statusCode);
+    }
+
+    /**
+     * @param string $content
+     * @param int $statusCode
+     * @return \Magento\Framework\Controller\Result\Raw
+     */
+    private function rawResult($content, $statusCode = 200)
+    {
+        $result = $this->resultRawFactory->create();
+        $result->setHttpResponseCode($statusCode);
+        return $result->setContents($content);
     }
 
 }

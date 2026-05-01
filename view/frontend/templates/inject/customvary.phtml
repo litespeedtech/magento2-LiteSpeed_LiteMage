@@ -11,8 +11,8 @@
 <script>
 var shouldReload = function(){
     if (document.cookie.indexOf('litemage-custvary') == -1) {
-        fetch('<?php echo $block->getCheckUrl();?>', {
-            method: 'POST',
+        fetch('<?php echo $block->escapeJs($block->getCheckUrl());?>', {
+            credentials: 'same-origin',
         })
         .then(response => response.json())
         .then(data => {

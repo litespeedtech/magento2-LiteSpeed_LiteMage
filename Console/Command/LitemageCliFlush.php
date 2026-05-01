@@ -84,6 +84,7 @@ class LitemageCliFlush extends Command
 				'Invalid action input, allowed values: status, enable, disable');
         }
         $output->writeln($mesg);
+        return \Magento\Framework\Console\Cli::RETURN_SUCCESS;
 	}
 
     private function getCurrentStatus($allowed)

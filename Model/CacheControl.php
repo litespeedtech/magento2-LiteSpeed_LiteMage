@@ -38,6 +38,7 @@ class CacheControl
     private const LSHEADER_DEBUG_CC = 'X-LiteMage-Debug-CC';
     private const LSHEADER_DEBUG_VARY = 'X-LiteMage-Debug-Vary';
     private const LSHEADER_DEBUG_Tag = 'X-LiteMage-Debug-Tag';
+    private const MAX_TAG_HEADER_VALUE_LENGTH = 7500;
 
     protected $_bypassedContext = [];
     protected $_ignoredBlocks = [];
@@ -73,6 +74,9 @@ class CacheControl
     
     /** @var \Litespeed\Litemage\Helper\Data */
     protected $helper;
+
+    /** @var \Litespeed\Litemage\Model\EsiRequestAuth */
+    protected $esiRequestAuth;
     
     protected $rawVaryString; // for debug only
 
@@ -88,6 +92,7 @@ class CacheControl
      * @param \Magento\Customer\Model\Session $userSession
      * @param \Litespeed\Litemage\Model\Config $config
      * @param \Litespeed\Litemage\Helper\Data $helper
+     * @param \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth
      */
     public function __construct(\Magento\Framework\App\Http\Context $httpContext,
                                 \Magento\Framework\Session\SessionManagerInterface $session,
@@ -97,7 +102,8 @@ class CacheControl
                                 \Magento\Store\Model\StoreManagerInterface $storeManager,
                                 \Magento\Customer\Model\Session $userSession,
                                 \Litespeed\Litemage\Model\Config $config,
-                                \Litespeed\Litemage\Helper\Data $helper
+                                \Litespeed\Litemage\Helper\Data $helper,
+                                \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth
     )
     {
         $this->httpContext = $httpContext;
@@ -107,9 +113,9 @@ class CacheControl
         $this->request = $request;
         $this->storeManager = $storeManager;
         $this->userSession = $userSession;
-
         $this->config = $config;
         $this->helper = $helper;
+        $this->esiRequestAuth = $esiRequestAuth;
         $this->_moduleEnabled = $config->moduleEnabled();
         if ($this->_moduleEnabled) {
             $this->_bypassedContext = $this->config->getBypassedContext();
@@ -263,12 +269,16 @@ class CacheControl
 
     public function getEsiUrl($handles, $blockName)
     {
+        $params = [
+            'b' => $blockName,
+            'h' => $this->encodeEsiHandles($handles),
+        ];
+        $params = $this->esiRequestAuth->signParams($params);
+        $params['_nosid'] = true;
+
         $url = $this->helper->getUrl(
                 'litemage/block/esi',
-                [
-                    'b' => $blockName,
-                    'h' => $this->encodeEsiHandles($handles),
-                ]
+                $params
         );
 
         return $url;
@@ -381,11 +391,11 @@ class CacheControl
     
     protected function setCacheTagHeader($response)
     {
-		$tags = [];
-		if (empty($this->_cacheTags)) {
+        $tags = [];
+        if (empty($this->_cacheTags)) {
             $tagsHeader = $response->getHeader('X-Magento-Tags');
             $this->_cacheTags = $tagsHeader ? explode(',', $tagsHeader->getFieldValue() ?? '') : [];
-		}
+        }
         if (!empty($this->_cacheTags)) {
             $tags = $this->helper->translateFilterTags($this->_cacheTags);
 
@@ -396,22 +406,58 @@ class CacheControl
                     $tags = $tag1;
                 }
             }
-		}
+        }
 
-		if (!in_array('MB', $tags)) {
-			array_unshift($tags, 'MB'); // MB is required
-		}
-		if (!in_array('store', $tags)) {
-			array_unshift($tags, 'store'); // MB is required
-		}
-        
-		$lstags = implode(',', $tags);
-		$response->setHeader(self::LSHEADER_CACHE_TAG, $lstags);
-		$response->clearHeader('X-Magento-Tags');
-		if ($this->helper->debugEnabled() == 2) {
-			$response->setHeader(self::LSHEADER_DEBUG_Tag, $lstags);
-		}
+        if (!in_array('MB', $tags)) {
+            array_unshift($tags, 'MB'); // MB is required
+        }
+        if (!in_array('store', $tags)) {
+            array_unshift($tags, 'store'); // store is required
+        }
+
+        $lstags = implode(',', $tags);
+        $tagHeaders = $this->splitTagHeaderValues($tags);
+        foreach ($tagHeaders as $tagHeader) {
+            $response->setHeader(self::LSHEADER_CACHE_TAG, $tagHeader);
+        }
+        $response->clearHeader('X-Magento-Tags');
+        if ($this->helper->debugEnabled() == 2) {
+            foreach ($tagHeaders as $tagHeader) {
+                $response->setHeader(self::LSHEADER_DEBUG_Tag, $tagHeader);
+            }
+        }
         return $lstags;
+    }
+
+    protected function splitTagHeaderValues(array $tags)
+    {
+        $chunks = [];
+        $current = [];
+        $currentLength = 0;
+
+        foreach ($tags as $tag) {
+            $tag = trim((string)$tag);
+            if ($tag === '') {
+                continue;
+            }
+
+            $tagLength = strlen($tag);
+            $nextLength = $currentLength + ($currentLength ? 1 : 0) + $tagLength;
+            if (!empty($current) && $nextLength > self::MAX_TAG_HEADER_VALUE_LENGTH) {
+                $chunks[] = implode(',', $current);
+                $current = [];
+                $currentLength = 0;
+            }
+
+            $current[] = $tag;
+            $currentLength += ($currentLength ? 1 : 0) + $tagLength;
+        }
+
+        if (!empty($current)) {
+            $chunks[] = implode(',', $current);
+        }
+
+        return $chunks;
     }
 
     public function checkCacheVary()
@@ -424,7 +470,7 @@ class CacheControl
                                          0);
         }
         if ($varymode) { // 1 or 2
-            $curcustvary = $this->request->get(self::LITEMAGE_CUSTVARY_COOKIE);
+            $curcustvary = $this->cookieManager->getCookie(self::LITEMAGE_CUSTVARY_COOKIE);
             if ($curcustvary != $varymode) {
                 $cookMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()->setPath('/')->setHttpOnly(false)->setSecure(false);
                 $this->cookieManager->setPublicCookie(self::LITEMAGE_CUSTVARY_COOKIE,
@@ -464,7 +510,7 @@ class CacheControl
         }
 
         $changed = false;
-        $currentVary = $this->request->get(self::ENV_VARYCOOKIE_DEFAULT);
+        $currentVary = $this->cookieManager->getCookie(self::ENV_VARYCOOKIE_DEFAULT);
         if ($varyString != $currentVary) {
             if ($varyString) {
                 $sensitiveCookMetadata = $this->cookieMetadataFactory->createSensitiveCookieMetadata()->setPath('/');
@@ -521,8 +567,7 @@ class CacheControl
         $tags = array_unique($block->getIdentities());
         $cnt = count($tags);
         if ($cnt > 100) {
-            $this->helper->debugLog("Identity block $name contains $cnt tags. too many. take first 100 tags only. detail: " . implode(', ', $tags));
-            $tags = array_slice($tags, 0, 100); // only sample fist 100
+            $this->helper->debugLog("Identity block $name contains $cnt tags. Header output will be split by value length.");
         } else {
             $this->helper->debugLog("Identity block $name contains $cnt tags. detail: " . implode(', ', $tags));
         }
