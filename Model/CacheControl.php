@@ -49,7 +49,7 @@ class CacheControl
     protected $_isEsiRequest = false;
     protected $_moduleEnabled;
     protected $_hasESI = false;
-    protected $_ttl = 0; 
+    protected $_ttl = 0;
     protected $_nocacheReason = '';
     protected $_internal = [];
 
@@ -71,13 +71,13 @@ class CacheControl
 
     /** @var \Magento\Customer\Model\Session */
     protected $userSession;
-    
+
     /** @var \Litespeed\Litemage\Helper\Data */
     protected $helper;
 
     /** @var \Litespeed\Litemage\Model\EsiRequestAuth */
     protected $esiRequestAuth;
-    
+
     protected $rawVaryString; // for debug only
 
     /**
@@ -161,7 +161,7 @@ class CacheControl
     {
         return $this->helper->debugEnabled();
     }
-    
+
     /**
      * Can only reduce scope, make ttl smaller, public change to private
      * @param int $ttl > 0, is public, < 0, is private, -1, ESI not cacheable
@@ -170,7 +170,7 @@ class CacheControl
     public function setCacheable($ttl, $msg, $trace=false)
     {
         $updated = false;
-        
+
         // check valid range
         if ($ttl == -1) {
             // special value for ESI block not cacheable
@@ -187,8 +187,8 @@ class CacheControl
             if ($ttl < 600) {
                 $ttl = 600;
             }
-        } 
-            
+        }
+
         switch ($this->_isCacheable) {
             case -1: // init
                 if ($ttl === null || $ttl > 0) {
@@ -200,10 +200,10 @@ class CacheControl
                 }
                 $updated = true;
                 break;
-                
+
             case 1: // already set public
                 if ($ttl > 0 && $ttl < $this->_ttl) { // allow reduce ttl
-                    $updated = true; 
+                    $updated = true;
                 } elseif ($ttl < 0) { // downgrade to private
                     $this->_isCacheable = 2; // private cacheable
                     $updated = true;
@@ -212,20 +212,20 @@ class CacheControl
                     $updated = true;
                 }
                 break;
-                
+
             case 2: // already set private
                 if ($ttl < 0 && $ttl > $this->_ttl) { // allow reduce ttl
-                    $updated = true; 
+                    $updated = true;
                 } elseif ($ttl == 0) {
                     $this->_isCacheable = 0;
                     $updated = true;
                 }
                 break;
-                
+
             case 0: // cannot switch from non-cacheable to cacheable
                 break;
         }
-        
+
         if ($updated) {
             $this->_ttl = $ttl;
             $this->helper->setCacheableFlag($this->_isCacheable, $msg, $trace);
@@ -329,8 +329,8 @@ class CacheControl
     {
         $this->helper->debugLog($message);
     }
-    
-    public function setCacheControlHeaders($response) 
+
+    public function setCacheControlHeaders($response)
     {
         if (isset($this->_internal['cch'])) {
              $this->helper->debugLog("SetCacheControlHeaders ignored, already set. ($this->_ttl)");
@@ -347,18 +347,18 @@ class CacheControl
 				$this->addCacheTags('404'); // later can set a 404 ttl, purge 404 pages
 			}
         }
-        
-        if (( $responsecode == 200 || $responsecode == 404) && ($this->_isCacheable > 0)
+
+        if (( $responsecode == 200 || $responsecode == 404 || $responsecode == 201) && ($this->_isCacheable > 0)
         ) {
             // cacheable
             $lstags = $this->setCacheTagHeader($response);
-            $cache_control = sprintf('%s,max-age=%d', 
+            $cache_control = sprintf('%s,max-age=%d',
                     (($this->_isCacheable == 1) ? 'public':'private'),
                     abs($this->_ttl));
         } else {
 			$cache_control = 'no-cache';
 		}
-        
+
         if ($this->_hasESI) {
             $cache_control .= ',esi=on';
         }
@@ -388,7 +388,7 @@ class CacheControl
         }
         $this->_internal['cch'] = $cache_control;
     }
-    
+
     protected function setCacheTagHeader($response)
     {
         $tags = [];
@@ -462,6 +462,9 @@ class CacheControl
 
     public function checkCacheVary()
     {
+        if ($this->_isEsiRequest) {
+            return false; // esi_include has no-vary set
+        }
         // check custvary first
         $rawdata = $varyString = '';
         $varymode = $this->config->getCustomVaryMode();
@@ -469,7 +472,7 @@ class CacheControl
             $this->httpContext->setValue('litemage_custvary_enforce', $varymode,
                                          0);
         }
-        if ($varymode) { // 1 or 2
+        if ($varymode) { // 1: yes, allow guest mode for first visit or 2: yes, enforce vary checking on first visit
             $curcustvary = $this->cookieManager->getCookie(self::LITEMAGE_CUSTVARY_COOKIE);
             if ($curcustvary != $varymode) {
                 $cookMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()->setPath('/')->setHttpOnly(false)->setSecure(false);
@@ -552,7 +555,7 @@ class CacheControl
             $this->_cacheTags = array_unique(array_merge($this->_cacheTags, $tags));
 
         } elseif ($tags && !in_array($tags, $this->_cacheTags) && !in_array($tags, $this->_ignoredTags)) {
-            
+
             $this->helper->debugLog("Added single tag $tags");
             $this->_cacheTags[] = $tags;
         }

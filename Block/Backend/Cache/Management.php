@@ -46,26 +46,6 @@ class Management extends \Magento\Backend\Block\Template
         $this->logger = $context->getLogger();
     }
 
-    /**
-     * Get clean cache url
-     *
-     * @return string
-     */
-    public function getPurgeUrl($type)
-    {
-        if ($type == 'Refresh') {
-            return $this->getUrl('*/*/cache/index');
-        } else {
-            $types = ['All', 'Tag', 'Url'];
-
-            if (in_array($type, $types)) {
-                return $this->getUrl('*/litemageCache/purge' . $type);
-            } else {
-                return $this->getUrl('*/litemageCache/purgeAll');
-            }
-        }
-    }
-
     public function getCacheStatistics()
     {
         $statBase = $this->getStatisticsBaseUrl();

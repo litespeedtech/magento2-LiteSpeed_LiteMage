@@ -24,7 +24,7 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
     private $_injectBlocks = [];
 
     /**
-     * 
+     *
      * @param \Litespeed\Litemage\Model\CacheControl $litemageCache
      * @param \Litespeed\Litemage\Helper\Data $helper
      */
@@ -47,7 +47,7 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
                                    $transport)
     {
         $handles = $layout->getUpdate()->getHandles();
-        
+
         $url = $this->litemageCache->getEsiUrl($handles, $blockName);
 
         $cacheTags = '';
@@ -56,7 +56,7 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
             $cacheTags = ' cache-tag="' . $this->escapeAttribute(implode(',', $tags)) . '"';
         }
 
-        $uri = sprintf('<esi:include src="%s"%s cache-control="%s"/>',
+        $uri = sprintf('<esi:include src="%s"%s cache-control="no-vary,%s"/>',
                        $this->escapeAttribute($url),
                        $cacheTags,
                        $this->escapeAttribute($access));
@@ -109,7 +109,7 @@ class LayoutRenderElement implements \Magento\Framework\Event\ObserverInterface
                 $blockTtl = $block->getTtl();
                 if (isset($blockTtl)) {
                     // litemage extended feature: use negative ttl to mark private cached ttl
-                    $access = ($blockTtl > 0) ? 'public' : 'private'; 
+                    $access = ($blockTtl > 0) ? 'public' : 'private';
                     $this->_replaceEsi($name, $layout, $access, $event->getTransport());
                 }
             }
