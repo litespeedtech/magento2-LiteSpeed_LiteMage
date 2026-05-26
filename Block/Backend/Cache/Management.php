@@ -141,4 +141,22 @@ class Management extends \Magento\Backend\Block\Template
         return $this->config->moduleEnabled();
     }
 
+    public function isWarmupEnabled()
+    {
+        return $this->config->isWarmupEnabled();
+    }
+
+    public function getWarmupStatusUrl()
+    {
+        return $this->getUrl('litespeed_litemage/warmup/status');
+    }
+
+    public function getWarmupConfigUrl()
+    {
+        return $this->getUrl(
+            'adminhtml/system_config/edit',
+            ['section' => 'litemage', '_fragment' => 'litemage_warmup-link']
+        );
+    }
+
 }

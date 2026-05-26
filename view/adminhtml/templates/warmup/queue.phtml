@@ -1,0 +1,468 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/** @var \Litespeed\Litemage\Block\Adminhtml\Warmup\Queue $block */
+$rows = $block->getRows();
+$currentPage = $block->getCurrentPage();
+$totalPages = $block->getTotalPages();
+$pageSize = $block->getPageSize();
+$activeFilter = $block->getActiveFilterLabel();
+$sourceWarnings = $block->getSourceWarnings();
+$actionCounts = $block->getWorkActionCounts();
+$duePending = (int)$actionCounts['due_pending'];
+$staleRunning = (int)$actionCounts['stale_running'];
+$disabledSourceRows = (int)$actionCounts['disabled_source'];
+$actions = [
+    [
+        'label' => __('Build Queue'),
+        'url' => $block->getGenerateUrl(),
+        'note' => __('Adds or updates queued warmup URLs from selected sources and removes disabled scheduled-source work. The Queue Build cron usually does this daily. It does not crawl URLs; Queue Process cron or Run Queue Now processes due rows.'),
+        'primary' => false,
+        'disabled' => false,
+        'disabled_note' => '',
+    ],
+    [
+        'label' => $staleRunning > 0
+            ? __('Run Queue Now (%1 due, %2 stalled)', $duePending, $staleRunning)
+            : __('Run Queue Now (%1 due)', $duePending),
+        'url' => $block->getProcessUrl(),
+        'note' => __('Manually runs one queue pass now instead of waiting for cron. It recovers stalled running rows before claiming work and honors the same enabled state, load guard, batch size, concurrency, crawl delay, request timeout, max runtime, and lane locks as cron.'),
+        'primary' => true,
+        'disabled' => !$block->isWarmupEnabled() || ($duePending === 0 && $staleRunning === 0),
+        'disabled_note' => !$block->isWarmupEnabled()
+            ? __('Cache warmer is paused. Resume it before processing queued URLs.')
+            : __('No pending queued URLs are due and no stalled running rows are waiting for recovery.'),
+    ],
+    [
+        'label' => __('Retry Failed (%1)', (int)$actionCounts['failed']),
+        'url' => $block->getRetryFailedUrl(),
+        'note' => __('Moves failed queued URLs back to pending so the queue can try those rows again.'),
+        'primary' => false,
+        'disabled' => (int)$actionCounts['failed'] === 0,
+        'disabled_note' => __('No failed queued URLs are available to retry.'),
+    ],
+];
+if ($disabledSourceRows > 0) {
+    $actions[] = [
+        'label' => __('Clear Disabled Sources (%1)', $disabledSourceRows),
+        'url' => $block->getClearDisabledSourcesUrl(),
+        'note' => __('Removes durable scheduled queue rows and source memberships that still belong to disabled sources. Use this when you want to clean those rows immediately without rebuilding every enabled source.'),
+        'primary' => false,
+        'disabled' => false,
+        'disabled_note' => '',
+    ];
+}
+if ($block->isWarmupEnabled()) {
+    $actions[] = [
+        'label' => __('Pause'),
+        'url' => $block->getPauseUrl(),
+        'note' => __('Sets Enable Cache Warmer to No in config and stops queue build/process runs until resumed. Existing queued URLs are kept.'),
+        'primary' => false,
+        'disabled' => false,
+        'disabled_note' => '',
+    ];
+} else {
+    $actions[] = [
+        'label' => __('Resume'),
+        'url' => $block->getResumeUrl(),
+        'note' => __('Sets Enable Cache Warmer to Yes in config. Cron can process due rows again; use Run Queue Now to start before the next process cron.'),
+        'primary' => true,
+        'disabled' => false,
+        'disabled_note' => '',
+    ];
+}
+?>
+<form id="litemage-warmup-action-post" method="post" style="display: none;">
+    <?= $block->getBlockHtml('formkey') ?>
+</form>
+<div class="litemage-warmup-actions-panel">
+    <div class="litemage-warmup-actions-title">
+        <?= $block->escapeHtml(__('Queue Actions')) ?>
+    </div>
+    <div class="litemage-warmup-actions">
+        <?php foreach ($actions as $action): ?>
+            <button type="button"
+                    class="action-default<?= $action['disabled'] ? ' _disabled' : '' ?> litemage-warmup-action"
+                    aria-disabled="<?= $action['disabled'] ? 'true' : 'false' ?>"
+                    aria-pressed="false"
+                    data-label="<?= $block->escapeHtmlAttr($action['label']) ?>"
+                    data-note="<?= $block->escapeHtmlAttr($action['note']) ?>"
+                    data-disabled-note="<?= $block->escapeHtmlAttr($action['disabled_note']) ?>"
+                    aria-controls="litemage-warmup-action-help"
+                    data-url="<?= $block->escapeUrl($action['url']) ?>">
+                <span><?= $block->escapeHtml($action['label']) ?></span>
+            </button>
+        <?php endforeach; ?>
+    </div>
+    <div id="litemage-warmup-action-help" class="litemage-warmup-actions-help" aria-live="polite">
+        <span id="litemage-warmup-action-help-text">
+            <?= $block->escapeHtml(__('Select a queue action to review details, then run it.')) ?>
+        </span>
+        <button id="litemage-warmup-action-execute"
+                type="button"
+                class="action-default primary litemage-warmup-action-execute"
+                hidden="hidden">
+            <span></span>
+        </button>
+    </div>
+</div>
+<?php if ($sourceWarnings): ?>
+    <div class="litemage-warmup-source-warnings">
+        <?php foreach ($sourceWarnings as $warning): ?>
+            <div><?= $block->escapeHtml($warning) ?></div>
+        <?php endforeach; ?>
+        <div><?= $block->escapeHtml(__('Use Clear Disabled Sources to remove those rows now, or Build Queue to reconcile all scheduled sources. The scheduled Queue Build cron does the same automatically.')) ?></div>
+    </div>
+<?php endif; ?>
+<form class="litemage-warmup-filters"
+      method="get"
+      action="<?= $block->escapeUrl($block->getFilterActionUrl()) ?>">
+    <input type="hidden" name="page" value="1"/>
+    <div class="litemage-warmup-filter-grid">
+        <label>
+            <span><?= $block->escapeHtml(__('Store')) ?></span>
+            <select class="admin__control-select" name="store_id">
+                <?php foreach ($block->getStoreFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('store_id', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Profile')) ?></span>
+            <select class="admin__control-select" name="profile_id">
+                <?php foreach ($block->getProfileFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('profile_id', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Mode')) ?></span>
+            <select class="admin__control-select" name="mode">
+                <?php foreach ($block->getModeFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('mode', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Status')) ?></span>
+            <select class="admin__control-select" name="status">
+                <?php foreach ($block->getStatusFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('status', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="litemage-warmup-source-filter">
+            <span><?= $block->escapeHtml(__('Source / Queue')) ?></span>
+            <select class="admin__control-select" name="source_queue">
+                <?php foreach ($block->getSourceQueueFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('source_queue', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="litemage-warmup-url-filter">
+            <span class="litemage-warmup-filter-head">
+                <span><?= $block->escapeHtml(__('URL')) ?></span>
+                <span class="litemage-warmup-inline-check">
+                    <input type="checkbox"
+                           name="url_exact"
+                           value="1"
+                           <?= $block->isUrlExactFilter() ? 'checked="checked"' : '' ?>/>
+                    <span><?= $block->escapeHtml(__('Exact Match')) ?></span>
+                </span>
+            </span>
+            <input class="admin__control-text"
+                   type="text"
+                   name="url"
+                   value="<?= $block->escapeHtmlAttr($block->getFilterValue('url')) ?>"
+                   placeholder="<?= $block->escapeHtmlAttr(__('Allow partial URL')) ?>"/>
+        </label>
+    </div>
+    <div class="litemage-warmup-filter-actions">
+        <button type="submit" class="action-default primary">
+            <span><?= $block->escapeHtml(__('Apply Filters')) ?></span>
+        </button>
+        <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getClearFilterUrl()) ?>')">
+            <span><?= $block->escapeHtml(__('Clear')) ?></span>
+        </button>
+    </div>
+</form>
+<form id="litemage-warmup-queue-massaction"
+      method="post"
+      action="<?= $block->escapeUrl($block->getMassActionUrl()) ?>"
+      onsubmit="return litemageWarmupConfirmMassAction(this);">
+    <?= $block->getBlockHtml('formkey') ?>
+    <div class="admin__data-grid-header">
+        <div class="admin__data-grid-header-row litemage-warmup-count-row">
+            <div>
+                <?= $block->escapeHtml(__('Showing %1-%2 of %3 queued URL rows', $block->getFirstItemNumber(), $block->getLastItemNumber(), $block->getTotalRows())) ?>
+                <?php if ($activeFilter): ?>
+                    <span class="litemage-warmup-active-filter">
+                        <?= $block->escapeHtml(__('Filtered by %1', $activeFilter)) ?>
+                    </span>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="admin__data-grid-header-row litemage-warmup-massaction-row">
+            <div class="admin__data-grid-actions-wrap litemage-warmup-massaction-wrap">
+                <select name="mass_action" class="admin__control-select">
+                    <option value=""><?= $block->escapeHtml(__('Actions')) ?></option>
+                    <option value="blacklist"><?= $block->escapeHtml(__('Blacklist Selected URLs')) ?></option>
+                    <option value="unblacklist"><?= $block->escapeHtml(__('Unblacklist Selected URLs')) ?></option>
+                    <option value="warm"><?= $block->escapeHtml(__('Warm Selected URLs Now')) ?></option>
+                    <option value="curl"><?= $block->escapeHtml(__('Show cURL for Selected URLs')) ?></option>
+                </select>
+                <button type="submit"
+                        class="action-default"
+                        title="<?= $block->escapeHtmlAttr(__('Selected-row actions update only the checked queued URL rows. Choose an action, select rows, then apply.')) ?>"
+                        aria-label="<?= $block->escapeHtmlAttr(__('Apply selected-row action. Selected-row actions update only the checked queued URL rows.')) ?>">
+                    <span><?= $block->escapeHtml(__('Apply')) ?></span>
+                </button>
+            </div>
+            <div class="admin__data-grid-pager-wrap">
+                <select class="admin__control-select litemage-grid-per-page"
+                        title="<?= $block->escapeHtmlAttr(__('Rows per page')) ?>"
+                        onchange="setLocation(this.options[this.selectedIndex].getAttribute('data-url'))">
+                    <?php foreach ($block->getPageSizeOptions() as $option): ?>
+                        <option data-url="<?= $block->escapeUrl($block->getPagerUrl(1, $option)) ?>"<?= $option === $pageSize ? ' selected="selected"' : '' ?>>
+                            <?= $block->escapeHtml(__('%1 per page', (int)$option)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="button"
+                        class="action-previous litemage-warmup-pager"
+                        <?= $currentPage <= 1 ? 'disabled="disabled"' : '' ?>
+                        data-url="<?= $block->escapeUrl($block->getPagerUrl($currentPage - 1)) ?>"
+                        title="<?= $block->escapeHtmlAttr(__('Previous page')) ?>">
+                    <span><?= $block->escapeHtml(__('Previous page')) ?></span>
+                </button>
+                <input class="admin__control-text litemage-grid-page-input"
+                       type="number"
+                       min="1"
+                       max="<?= (int)$totalPages ?>"
+                       value="<?= (int)$currentPage ?>"
+                       data-total-pages="<?= (int)$totalPages ?>"
+                       title="<?= $block->escapeHtmlAttr(__('Page')) ?>"/>
+                <span class="litemage-grid-page-total"><?= $block->escapeHtml(__('of %1', $totalPages)) ?></span>
+                <button type="button"
+                        class="action-next litemage-warmup-pager"
+                        <?= $currentPage >= $totalPages ? 'disabled="disabled"' : '' ?>
+                        data-url="<?= $block->escapeUrl($block->getPagerUrl($currentPage + 1)) ?>"
+                        title="<?= $block->escapeHtmlAttr(__('Next page')) ?>">
+                    <span><?= $block->escapeHtml(__('Next page')) ?></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="admin__data-grid-wrap">
+    <table class="data-grid">
+        <thead>
+        <tr>
+            <th class="data-grid-th">
+                <input type="checkbox" onclick="document.querySelectorAll('.litemage-warmup-row').forEach(function (box) { box.checked = this.checked; }.bind(this));"/>
+            </th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('ID')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Status')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Store')) ?></th>
+            <th class="data-grid-th"
+                title="<?= $block->escapeHtmlAttr(__('The source queue that owns this crawl work row. Duplicate lower-priority source memberships are covered and do not create separate work.')) ?>">
+                <?= $block->escapeHtml(__('Effective Queue')) ?>
+            </th>
+            <th class="data-grid-th"
+                title="<?= $block->escapeHtmlAttr(__('Other source memberships for this URL. These are covered by the effective queue row.')) ?>">
+                <?= $block->escapeHtml(__('Also Found In')) ?>
+            </th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Profile')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Mode')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Effective Priority')) ?></th>
+            <th class="data-grid-th"
+                title="<?= $block->escapeHtmlAttr(__('Attempts used before the queue gives up. Format is used/max and resets to 0 after a successful warmup or Retry Failed.')) ?>">
+                <?= $block->escapeHtml(__('Attempts')) ?>
+            </th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Next Run')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('URL')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Last Error')) ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php if (!$rows): ?>
+            <tr>
+                <td colspan="13"><?= $block->escapeHtml(__('No queued warmup URLs.')) ?></td>
+            </tr>
+        <?php endif; ?>
+        <?php foreach ($rows as $row): ?>
+            <tr>
+                <td><input type="checkbox" class="litemage-warmup-row" name="selected[]" value="<?= (int)$row['queue_id'] ?>"/></td>
+                <td><?= (int)$row['queue_id'] ?></td>
+                <td><?= $block->escapeHtml($block->getQueueStatusLabel($row)) ?></td>
+                <td><?= (int)$row['store_id'] ?></td>
+                <td title="<?= $block->escapeHtmlAttr($block->getEffectiveQueueLabel($row)) ?>"><?= $block->escapeHtml($block->getEffectiveQueueLabel($row)) ?></td>
+                <td title="<?= $block->escapeHtmlAttr($block->getAlsoFoundInTitle($row)) ?>"><?= $block->escapeHtml($block->shorten($block->getAlsoFoundInLabel($row), 80)) ?></td>
+                <td title="<?= $block->escapeHtmlAttr((string)($row['profile_id'] === null ? 0 : (int)$row['profile_id'])) ?>">
+                    <?= $block->escapeHtml($block->getProfileDisplayLabel($row)) ?>
+                </td>
+                <td><?= $block->escapeHtml($row['mode']) ?></td>
+                <td><?= (int)$row['priority'] ?></td>
+                <td><?= (int)$row['attempts'] ?>/<?= (int)$row['max_attempts'] ?></td>
+                <td><?= $block->escapeHtml($row['next_run_at']) ?></td>
+                <td title="<?= $block->escapeHtmlAttr($row['url']) ?>"><?= $block->escapeHtml($block->shorten($row['url'])) ?></td>
+                <td title="<?= $block->escapeHtmlAttr($row['last_error']) ?>"><?= $block->escapeHtml($block->shorten($row['last_error'])) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+</form>
+<script>
+require(['mage/translate'], function ($t) {
+    var actionHelpText = document.getElementById('litemage-warmup-action-help-text');
+    var executeButton = document.getElementById('litemage-warmup-action-execute');
+    var executeButtonLabel = executeButton ? executeButton.querySelector('span') : null;
+    var defaultActionHelp = $t('Select a queue action to review details, then run it.');
+    var actionButtons = document.querySelectorAll('.litemage-warmup-action');
+    var pagerButtons = document.querySelectorAll('.litemage-warmup-pager');
+    var selectedAction = null;
+    var selectedUrl = '';
+
+    var renderActionHelp = function (message, label, url, executable) {
+        if (actionHelpText) {
+            actionHelpText.textContent = message || defaultActionHelp;
+        }
+        selectedUrl = executable ? url : '';
+        if (executeButton) {
+            executeButton.hidden = !executable;
+            executeButton.disabled = !executable;
+        }
+        if (executeButtonLabel) {
+            executeButtonLabel.textContent = label || '';
+        }
+    };
+
+    var clearSelectedAction = function () {
+        Array.prototype.forEach.call(actionButtons, function (button) {
+            button.classList.remove('_selected');
+            button.setAttribute('aria-pressed', 'false');
+        });
+    };
+
+    Array.prototype.forEach.call(actionButtons, function (button) {
+        var note = button.getAttribute('data-note') || defaultActionHelp;
+        var disabledNote = button.getAttribute('data-disabled-note') || note;
+        var label = button.getAttribute('data-label') || button.textContent;
+        var url = button.getAttribute('data-url');
+
+        button.addEventListener('click', function () {
+            clearSelectedAction();
+            selectedAction = button;
+            button.classList.add('_selected');
+            button.setAttribute('aria-pressed', 'true');
+            if (button.getAttribute('aria-disabled') === 'true') {
+                renderActionHelp(disabledNote, '', '', false);
+                return;
+            }
+            renderActionHelp(note, label, url, true);
+        });
+        button.addEventListener('mouseenter', function () {
+            renderActionHelp(button.getAttribute('aria-disabled') === 'true' ? disabledNote : note, '', '', false);
+        });
+        button.addEventListener('focus', function () {
+            renderActionHelp(button.getAttribute('aria-disabled') === 'true' ? disabledNote : note, '', '', false);
+        });
+        button.addEventListener('mouseleave', function () {
+            if (selectedAction) {
+                renderActionHelp(
+                    selectedAction.getAttribute('aria-disabled') === 'true'
+                        ? (selectedAction.getAttribute('data-disabled-note') || selectedAction.getAttribute('data-note') || defaultActionHelp)
+                        : (selectedAction.getAttribute('data-note') || defaultActionHelp),
+                    selectedAction.getAttribute('data-label') || selectedAction.textContent,
+                    selectedAction.getAttribute('data-url'),
+                    selectedAction.getAttribute('aria-disabled') !== 'true'
+                );
+            } else {
+                renderActionHelp(defaultActionHelp, '', '', false);
+            }
+        });
+    });
+
+    if (executeButton) {
+        executeButton.addEventListener('click', function () {
+            if (selectedUrl) {
+                submitWarmupAction(selectedUrl);
+            }
+        });
+    }
+
+    Array.prototype.forEach.call(pagerButtons, function (button) {
+        button.addEventListener('click', function () {
+            if (!button.disabled) {
+                setLocation(button.getAttribute('data-url'));
+            }
+        });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.litemage-grid-page-input'), function (input) {
+        var goToPage = function () {
+            var totalPages = parseInt(input.getAttribute('data-total-pages'), 10) || 1;
+            var page = parseInt(input.value, 10) || 1;
+            page = Math.max(1, Math.min(page, totalPages));
+            input.value = page;
+
+            var url = new URL(window.location.href);
+            url.searchParams.set('page', page);
+            setLocation(url.toString());
+        };
+
+        input.addEventListener('change', goToPage);
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                goToPage();
+            }
+        });
+    });
+
+    window.litemageWarmupConfirmMassAction = function (form) {
+        var action = form.querySelector('[name="mass_action"]').value;
+        var selected = form.querySelectorAll('.litemage-warmup-row:checked').length;
+        var messages = {
+            blacklist: $t('Blacklist selected URLs? Blacklisted URLs will be skipped by future warmup generation.'),
+            unblacklist: $t('Remove selected URLs from the blacklist? Future queue builds may add them again.'),
+            warm: $t('Warm selected URLs now? This sends crawler requests immediately.'),
+            curl: $t('Show cURL commands for selected URLs? This does not warm the cache.')
+        };
+
+        if (!action) {
+            alert($t('Choose a selected-row action first.'));
+            return false;
+        }
+        if (!selected) {
+            alert($t('Select one or more queued URL rows first.'));
+            return false;
+        }
+        return confirm(messages[action] || $t('Apply the selected action now?'));
+    };
+
+    function submitWarmupAction(url) {
+        var form = document.getElementById('litemage-warmup-action-post');
+        if (!form || !url) {
+            return;
+        }
+        form.setAttribute('action', url);
+        form.submit();
+    }
+});
+</script>

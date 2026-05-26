@@ -1,0 +1,226 @@
+.litemage-warmup-actions-panel {
+    background: #f8f8f8;
+    border: 1px solid #d6d6d6;
+    margin: 0 0 1.8rem;
+    padding: 1.2rem 1.4rem 1rem;
+}
+
+.litemage-warmup-actions-title {
+    color: #303030;
+    font-weight: 600;
+    margin: 0 0 .9rem;
+}
+
+.litemage-warmup-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    justify-content: flex-start;
+}
+
+.litemage-warmup-actions .action-default {
+    font-size: 1.2rem;
+    line-height: 1.6rem;
+    margin: 0;
+    min-height: 0;
+    padding: .45rem 1rem;
+}
+
+.litemage-warmup-actions .action-default._disabled {
+    background: #f1f1f1;
+    border-color: #d0d0d0;
+    color: #777;
+    cursor: not-allowed;
+    opacity: .75;
+}
+
+.litemage-warmup-actions .action-default._selected {
+    border-color: #007bdb;
+    box-shadow: 0 0 0 1px #007bdb inset;
+}
+
+.litemage-warmup-actions-help {
+    align-items: center;
+    border-top: 1px solid #e3e3e3;
+    color: #666;
+    display: flex;
+    font-size: 1.2rem;
+    gap: 1rem;
+    justify-content: space-between;
+    line-height: 1.35;
+    margin-top: 1rem;
+    min-height: 3rem;
+    padding-top: .7rem;
+}
+
+.litemage-warmup-actions-help span {
+    flex: 1 1 auto;
+}
+
+.litemage-warmup-action-execute {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.litemage-warmup-action-execute[hidden] {
+    display: none;
+}
+
+.litemage-warmup-source-warnings {
+    background: #fff8d6;
+    border: 1px solid #e2c35d;
+    color: #5f4b00;
+    line-height: 1.45;
+    margin: 0 0 1.6rem;
+    padding: .9rem 1.2rem;
+}
+
+.litemage-warmup-source-warnings div + div {
+    margin-top: .35rem;
+}
+
+.litemage-warmup-source-warning-actions {
+    margin-top: .8rem;
+}
+
+.litemage-warmup-source-warning-actions .action-default {
+    font-size: 1.2rem;
+    line-height: 1.6rem;
+    margin: 0;
+    min-height: 0;
+    padding: .45rem 1rem;
+}
+
+.litemage-warmup-filters {
+    border: 1px solid #d6d6d6;
+    margin: 0 0 1.6rem;
+    padding: 1.2rem;
+}
+
+.litemage-warmup-filter-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.litemage-warmup-filter-grid .admin__control-text,
+.litemage-warmup-filter-grid .admin__control-select {
+    max-width: none;
+    width: 100%;
+}
+
+.litemage-warmup-filter-grid label > span {
+    color: #555;
+    display: block;
+    font-size: 1.2rem;
+    line-height: 1.6rem;
+    margin-bottom: .3rem;
+}
+
+.litemage-warmup-source-filter,
+.litemage-warmup-url-filter {
+    grid-column: span 2;
+}
+
+.litemage-warmup-filter-head {
+    align-items: center;
+    display: flex !important;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.litemage-warmup-filter-grid .litemage-warmup-inline-check {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+    white-space: nowrap;
+}
+
+.litemage-warmup-filter-grid .litemage-warmup-inline-check input {
+    margin: 0;
+}
+
+.litemage-warmup-filter-grid .litemage-warmup-inline-check span {
+    color: #303030;
+    display: inline;
+    font-size: 1.2rem;
+    line-height: 1.6rem;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .litemage-warmup-source-filter,
+    .litemage-warmup-url-filter {
+        grid-column: span 1;
+    }
+}
+
+.litemage-warmup-filter-actions {
+    display: flex;
+    gap: .8rem;
+    margin-top: 1rem;
+}
+
+.litemage-warmup-active-filter {
+    color: #666;
+    display: inline-block;
+    margin-left: .8rem;
+}
+
+.litemage-warmup-massaction-wrap {
+    align-items: center;
+    display: flex;
+    float: none;
+    gap: .8rem;
+    justify-content: flex-start;
+    margin-left: 0;
+    text-align: left;
+    width: auto;
+}
+
+.litemage-warmup-massaction-row {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-top: .8rem;
+}
+
+.litemage-warmup-massaction-row .admin__data-grid-pager-wrap {
+    align-items: center;
+    display: flex;
+    float: none;
+    margin-left: auto;
+}
+
+.litemage-grid-per-page {
+    min-width: 12rem;
+}
+
+.litemage-grid-page-input {
+    text-align: center;
+    width: 5.4rem;
+}
+
+.litemage-grid-page-total {
+    color: #514943;
+    line-height: 3.2rem;
+    white-space: nowrap;
+}
+
+.litemage-help-icon {
+    background: #ebebeb;
+    border: 1px solid #adadad;
+    border-radius: 50%;
+    color: #514943;
+    cursor: help;
+    display: inline-block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    height: 1.8rem;
+    line-height: 1.7rem;
+    margin-left: .6rem;
+    text-align: center;
+    vertical-align: middle;
+    width: 1.8rem;
+}

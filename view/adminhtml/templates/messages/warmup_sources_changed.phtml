@@ -1,0 +1,22 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/**
+ * @var $block \Magento\Backend\Block\Template
+ * @var $escaper \Magento\Framework\Escaper
+ */
+$queueUrl = (string)$block->getData('queue_url');
+?>
+<?= $escaper->escapeHtml(__(
+    'LiteMage URL source selection changed. The next Queue Build cron will add/update selected sources and remove disabled scheduled-source work automatically.'
+)) ?>
+<?= $escaper->escapeHtml(__('Open')) ?>
+<a href="<?= $escaper->escapeUrl($queueUrl) ?>"><?= $escaper->escapeHtml(__('Warmup Queue')) ?></a>
+<?= $escaper->escapeHtml(__(
+    'and run Build Queue to apply the change immediately.'
+)) ?>

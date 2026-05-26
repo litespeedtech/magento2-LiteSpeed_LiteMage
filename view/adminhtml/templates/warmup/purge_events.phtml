@@ -1,0 +1,250 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/** @var \Litespeed\Litemage\Block\Adminhtml\Warmup\PurgeEvents $block */
+$events = $block->getEvents();
+$currentPage = $block->getCurrentPage();
+$totalPages = $block->getTotalPages();
+$pageSize = $block->getPageSize();
+?>
+<style>
+.litemage-purge-events-table {
+    table-layout: fixed;
+}
+
+.litemage-purge-events-table .col-id {
+    width: 7rem;
+}
+
+.litemage-purge-events-table .col-created {
+    width: 15rem;
+}
+
+.litemage-purge-events-table .col-source,
+.litemage-purge-events-table .col-flag,
+.litemage-purge-events-table .col-count {
+    width: 9rem;
+}
+
+.litemage-purge-events-table .col-reason {
+    width: 22rem;
+}
+
+.litemage-purge-events-table .col-tags {
+    width: 30rem;
+}
+
+.litemage-purge-events-table .col-work {
+    width: 13rem;
+}
+
+.litemage-purge-events-text {
+    line-height: 1.8rem;
+    max-height: 5.4rem;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.litemage-purge-events-text.is-expanded {
+    max-height: none;
+}
+
+.litemage-purge-events-toggle {
+    background: transparent;
+    border: 0;
+    color: #007bdb;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 1.2rem;
+    line-height: 1.6rem;
+    margin: .35rem 0 0;
+    padding: 0;
+}
+
+.litemage-purge-events-toggle:hover,
+.litemage-purge-events-toggle:focus {
+    color: #005a9c;
+    text-decoration: underline;
+}
+
+.litemage-purge-work-lines {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.litemage-purge-work-lines div {
+    align-items: baseline;
+    display: flex;
+    gap: .4rem;
+    justify-content: space-between;
+    white-space: nowrap;
+}
+
+.litemage-purge-work-lines span {
+    color: #555;
+}
+
+.litemage-grid-per-page {
+    min-width: 12rem;
+}
+
+.litemage-grid-page-input {
+    text-align: center;
+    width: 5.4rem;
+}
+
+.litemage-grid-page-total {
+    color: #514943;
+    line-height: 3.2rem;
+    white-space: nowrap;
+}
+</style>
+<div class="admin__data-grid-header">
+    <div class="admin__data-grid-header-row">
+        <div>
+            <?= $block->escapeHtml(__('Showing %1-%2 of %3 purge events', $block->getFirstItemNumber(), $block->getLastItemNumber(), $block->getTotalRows())) ?>
+        </div>
+        <div class="admin__data-grid-pager-wrap">
+            <select class="admin__control-select litemage-grid-per-page"
+                    title="<?= $block->escapeHtmlAttr(__('Rows per page')) ?>"
+                    onchange="setLocation(this.options[this.selectedIndex].getAttribute('data-url'))">
+                <?php foreach ($block->getPageSizeOptions() as $option): ?>
+                    <option data-url="<?= $block->escapeUrl($block->getPagerUrl(1, $option)) ?>"<?= $option === $pageSize ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml(__('%1 per page', (int)$option)) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <button type="button"
+                    class="action-previous litemage-purge-events-pager"
+                    <?= $currentPage <= 1 ? 'disabled="disabled"' : '' ?>
+                    data-url="<?= $block->escapeUrl($block->getPagerUrl($currentPage - 1)) ?>"
+                    title="<?= $block->escapeHtmlAttr(__('Previous page')) ?>">
+                <span><?= $block->escapeHtml(__('Previous page')) ?></span>
+            </button>
+            <input class="admin__control-text litemage-grid-page-input"
+                   type="number"
+                   min="1"
+                   max="<?= (int)$totalPages ?>"
+                   value="<?= (int)$currentPage ?>"
+                   data-total-pages="<?= (int)$totalPages ?>"
+                   title="<?= $block->escapeHtmlAttr(__('Page')) ?>"/>
+            <span class="litemage-grid-page-total"><?= $block->escapeHtml(__('of %1', $totalPages)) ?></span>
+            <button type="button"
+                    class="action-next litemage-purge-events-pager"
+                    <?= $currentPage >= $totalPages ? 'disabled="disabled"' : '' ?>
+                    data-url="<?= $block->escapeUrl($block->getPagerUrl($currentPage + 1)) ?>"
+                    title="<?= $block->escapeHtmlAttr(__('Next page')) ?>">
+                <span><?= $block->escapeHtml(__('Next page')) ?></span>
+            </button>
+        </div>
+    </div>
+</div>
+<div class="admin__data-grid-wrap">
+    <table class="data-grid litemage-purge-events-table">
+        <thead>
+        <tr>
+            <th class="data-grid-th col-id"><?= $block->escapeHtml(__('ID')) ?></th>
+            <th class="data-grid-th col-created"><?= $block->escapeHtml(__('Created')) ?></th>
+            <th class="data-grid-th col-source"><?= $block->escapeHtml(__('Source')) ?></th>
+            <th class="data-grid-th col-reason"><?= $block->escapeHtml(__('Reason')) ?></th>
+            <th class="data-grid-th col-tags"><?= $block->escapeHtml(__('Tags')) ?></th>
+            <th class="data-grid-th col-flag"><?= $block->escapeHtml(__('Full Scope')) ?></th>
+            <th class="data-grid-th col-flag"><?= $block->escapeHtml(__('Purge All')) ?></th>
+            <th class="data-grid-th col-count"><?= $block->escapeHtml(__('Entities')) ?></th>
+            <th class="data-grid-th col-work"><?= $block->escapeHtml(__('Warmup Work')) ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php if (!$events): ?>
+            <tr>
+                <td colspan="9"><?= $block->escapeHtml(__('No purge events recorded.')) ?></td>
+            </tr>
+        <?php endif; ?>
+        <?php foreach ($events as $event): ?>
+            <tr>
+                <td><?= (int)$event['event_id'] ?></td>
+                <td><?= $block->escapeHtml($event['created_at']) ?></td>
+                <td><?= $block->escapeHtml($event['source']) ?></td>
+                <td>
+                    <div class="litemage-purge-events-text"><?= $block->escapeHtml($event['reason']) ?></div>
+                    <?php if ($block->isLong($event['reason'])): ?>
+                        <button type="button"
+                                class="litemage-purge-events-toggle"
+                                data-expand-label="<?= $block->escapeHtmlAttr(__('Show more')) ?>"
+                                data-collapse-label="<?= $block->escapeHtmlAttr(__('Show less')) ?>">
+                            <?= $block->escapeHtml(__('Show more')) ?>
+                        </button>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <div class="litemage-purge-events-text"><?= $block->escapeHtml($event['tags']) ?></div>
+                    <?php if ($block->isLong($event['tags'])): ?>
+                        <button type="button"
+                                class="litemage-purge-events-toggle"
+                                data-expand-label="<?= $block->escapeHtmlAttr(__('Show more')) ?>"
+                                data-collapse-label="<?= $block->escapeHtmlAttr(__('Show less')) ?>">
+                            <?= $block->escapeHtml(__('Show more')) ?>
+                        </button>
+                    <?php endif; ?>
+                </td>
+                <td><?= ((int)$event['is_broad']) ? $block->escapeHtml(__('Yes')) : $block->escapeHtml(__('No')) ?></td>
+                <td><?= ((int)$event['is_purge_all']) ? $block->escapeHtml(__('Yes')) : $block->escapeHtml(__('No')) ?></td>
+                <td><?= (int)$event['entity_count'] ?></td>
+                <td>
+                    <div class="litemage-purge-work-lines">
+                        <?php foreach ($block->getWarmupWorkLines($event) as $line): ?>
+                            <div>
+                                <span><?= $block->escapeHtml($line['label']) ?></span>
+                                <strong><?= (int)$line['value'] ?></strong>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<script>
+require(['jquery'], function ($) {
+    $('.litemage-purge-events-toggle').on('click', function () {
+        var button = $(this);
+        var text = button.siblings('.litemage-purge-events-text').first();
+        var expanded = text.hasClass('is-expanded');
+
+        text.toggleClass('is-expanded', !expanded);
+        button.text(expanded ? button.data('expand-label') : button.data('collapse-label'));
+    });
+
+    $('.litemage-purge-events-pager').on('click', function () {
+        if (!this.disabled) {
+            setLocation($(this).data('url'));
+        }
+    });
+
+    $('.litemage-grid-page-input').on('change keydown', function (event) {
+        if (event.type === 'keydown' && event.key !== 'Enter') {
+            return;
+        }
+        if (event.type === 'keydown') {
+            event.preventDefault();
+        }
+
+        var totalPages = parseInt(this.getAttribute('data-total-pages'), 10) || 1;
+        var page = parseInt(this.value, 10) || 1;
+        page = Math.max(1, Math.min(page, totalPages));
+        this.value = page;
+
+        var url = new URL(window.location.href);
+        url.searchParams.set('page', page);
+        setLocation(url.toString());
+    });
+});
+</script>

@@ -1,0 +1,42 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/** @var \Litespeed\Litemage\Block\Adminhtml\Warmup\Navigation $block */
+$active = $block->getActiveSection();
+?>
+<div class="admin__data-grid-header">
+    <div class="admin__data-grid-header-row">
+        <div style="align-items: center; display: flex; justify-content: space-between; width: 100%;">
+            <div>
+                <strong><?= $block->escapeHtml(__('LiteMage Cache Warmer')) ?></strong>:
+                <strong><?= $block->escapeHtml($block->isWarmupEnabled() ? __('Enabled') : __('Disabled')) ?></strong>
+                <button type="button"
+                        class="action-default"
+                        style="margin-left: 1rem;"
+                        onclick="setLocation('<?= $block->escapeUrl($block->getConfigUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('Configure')) ?></span>
+                </button>
+            </div>
+            <a class="litemage-warmup-back-link"
+               href="<?= $block->escapeUrl($block->getCacheManagementUrl()) ?>">
+                <?= $block->escapeHtml(__('Back to Cache Management')) ?>
+            </a>
+        </div>
+    </div>
+    <div class="admin__data-grid-header-row">
+        <div class="page-actions">
+            <?php foreach ($block->getNavItems() as $key => $item): ?>
+                <button type="button"
+                        class="action-default<?= $active === $key ? ' primary' : '' ?>"
+                        onclick="setLocation('<?= $block->escapeUrl($item['url']) ?>')">
+                    <span><?= $block->escapeHtml($item['label']) ?></span>
+                </button>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</div>

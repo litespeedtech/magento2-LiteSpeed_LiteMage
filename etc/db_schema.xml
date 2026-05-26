@@ -1,0 +1,329 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="litemage_warm_profile" resource="default" engine="innodb" comment="LiteMage Warmup Vary Profiles">
+        <column xsi:type="int" name="profile_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Profile ID"/>
+        <column xsi:type="varchar" name="code" nullable="false" length="64" comment="Profile Code"/>
+        <column xsi:type="varchar" name="label" nullable="false" length="255" comment="Profile Label"/>
+        <column xsi:type="varchar" name="profile_type" nullable="false" length="32" comment="Profile Type"/>
+        <column xsi:type="text" name="config" nullable="true" comment="Profile Config"/>
+        <column xsi:type="smallint" name="is_active" padding="5" unsigned="true" nullable="false" default="1" comment="Is Active"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="profile_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="LITEMAGE_WARM_PROFILE_CODE">
+            <column name="code"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_PROFILE_TYPE_ACTIVE" indexType="btree">
+            <column name="profile_type"/>
+            <column name="is_active"/>
+        </index>
+    </table>
+    <table name="litemage_warm_url" resource="default" engine="innodb" comment="LiteMage Warmup Known URLs">
+        <column xsi:type="int" name="url_id" padding="10" unsigned="true" nullable="false" identity="true" comment="URL ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="varchar" name="url_hash" nullable="false" length="64" comment="URL Hash"/>
+        <column xsi:type="text" name="url" nullable="false" comment="URL"/>
+        <column xsi:type="varchar" name="source" nullable="false" length="32" comment="URL Source"/>
+        <column xsi:type="text" name="source_flags" nullable="true" comment="URL Source Flags"/>
+        <column xsi:type="varchar" name="page_type" nullable="true" length="32" comment="Page Type"/>
+        <column xsi:type="varchar" name="entity_type" nullable="true" length="32" comment="Entity Type"/>
+        <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="true" comment="Entity ID"/>
+        <column xsi:type="int" name="priority" padding="10" nullable="false" default="0" comment="Priority"/>
+        <column xsi:type="int" name="interval_seconds" padding="10" unsigned="true" nullable="false" default="0" comment="Warm Interval Seconds"/>
+        <column xsi:type="smallint" name="is_active" padding="5" unsigned="true" nullable="false" default="1" comment="Is Active"/>
+        <column xsi:type="smallint" name="is_blacklisted" padding="5" unsigned="true" nullable="false" default="0" comment="Is Blacklisted"/>
+        <column xsi:type="timestamp" name="last_seen_at" nullable="true" comment="Last Seen At"/>
+        <column xsi:type="timestamp" name="last_warmed_at" nullable="true" comment="Last Warmed At"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="url_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="LITEMAGE_WARM_URL_STORE_HASH">
+            <column name="store_id"/>
+            <column name="url_hash"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_URL_SOURCE_ACTIVE" indexType="btree">
+            <column name="source"/>
+            <column name="is_active"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_URL_BLACKLIST" indexType="btree">
+            <column name="is_blacklisted"/>
+            <column name="store_id"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_URL_ENTITY" indexType="btree">
+            <column name="entity_type"/>
+            <column name="entity_id"/>
+            <column name="store_id"/>
+        </index>
+    </table>
+    <table name="litemage_warm_url_source" resource="default" engine="innodb" comment="LiteMage Warmup URL Source Membership">
+        <column xsi:type="int" name="source_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Source Membership ID"/>
+        <column xsi:type="int" name="url_id" padding="10" unsigned="true" nullable="false" comment="URL ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="varchar" name="url_hash" nullable="false" length="64" comment="URL Hash"/>
+        <column xsi:type="varchar" name="source_code" nullable="false" length="32" comment="Source Code"/>
+        <column xsi:type="varchar" name="source_instance_hash" nullable="false" length="64" comment="Source Instance Hash"/>
+        <column xsi:type="text" name="source_instance_key" nullable="true" comment="Source Instance Key"/>
+        <column xsi:type="int" name="source_priority" padding="10" nullable="false" default="100" comment="Source Priority"/>
+        <column xsi:type="int" name="url_priority" padding="10" nullable="true" comment="URL Priority"/>
+        <column xsi:type="int" name="effective_priority" padding="10" nullable="false" default="100" comment="Effective Priority"/>
+        <column xsi:type="int" name="interval_seconds" padding="10" unsigned="true" nullable="false" default="0" comment="Warm Interval Seconds"/>
+        <column xsi:type="smallint" name="is_active" padding="5" unsigned="true" nullable="false" default="1" comment="Is Active"/>
+        <column xsi:type="timestamp" name="last_seen_at" nullable="true" comment="Last Seen At"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="source_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="LITEMAGE_WARM_URL_SOURCE_UNQ">
+            <column name="url_id"/>
+            <column name="source_code"/>
+            <column name="source_instance_hash"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_URL_SOURCE_URL" indexType="btree">
+            <column name="url_id"/>
+            <column name="is_active"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_URL_SOURCE_PRIORITY" indexType="btree">
+            <column name="source_code"/>
+            <column name="is_active"/>
+            <column name="source_priority"/>
+            <column name="effective_priority"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_URL_SOURCE_STORE_HASH" indexType="btree">
+            <column name="store_id"/>
+            <column name="url_hash"/>
+        </index>
+    </table>
+    <table name="litemage_warm_queue" resource="default" engine="innodb" comment="LiteMage Warmup Queue">
+        <column xsi:type="int" name="queue_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Queue ID"/>
+        <column xsi:type="int" name="url_id" padding="10" unsigned="true" nullable="true" comment="URL ID"/>
+        <column xsi:type="int" name="profile_id" padding="10" unsigned="true" nullable="false" default="0" comment="Profile ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="varchar" name="url_hash" nullable="false" length="64" comment="URL Hash"/>
+        <column xsi:type="text" name="url" nullable="false" comment="URL"/>
+        <column xsi:type="varchar" name="source" nullable="false" length="32" comment="Queue Source"/>
+        <column xsi:type="varchar" name="work_type" nullable="false" length="16" default="scheduled" comment="Queue Work Type"/>
+        <column xsi:type="int" name="warmup_round" padding="10" unsigned="true" nullable="false" default="0" comment="Scheduled Warmup Round"/>
+        <column xsi:type="text" name="source_flags" nullable="true" comment="Queue Source Evidence Flags"/>
+        <column xsi:type="text" name="source_instance_key" nullable="true" comment="Source Instance Key"/>
+        <column xsi:type="int" name="source_priority" padding="10" nullable="false" default="100" comment="Source Priority"/>
+        <column xsi:type="int" name="url_priority" padding="10" nullable="true" comment="URL Priority"/>
+        <column xsi:type="varchar" name="mode" nullable="false" length="16" comment="Crawler Mode"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="16" default="pending" comment="Queue Status"/>
+        <column xsi:type="int" name="priority" padding="10" nullable="false" default="100" comment="Effective Priority"/>
+        <column xsi:type="smallint" name="is_urgent" padding="5" unsigned="true" nullable="false" default="0" comment="Is Urgent"/>
+        <column xsi:type="smallint" name="attempts" padding="5" unsigned="true" nullable="false" default="0" comment="Attempts"/>
+        <column xsi:type="smallint" name="max_attempts" padding="5" unsigned="true" nullable="false" default="3" comment="Max Attempts"/>
+        <column xsi:type="timestamp" name="scheduled_at" nullable="true" comment="Scheduled At"/>
+        <column xsi:type="timestamp" name="next_run_at" nullable="true" comment="Next Run At"/>
+        <column xsi:type="timestamp" name="locked_at" nullable="true" comment="Locked At"/>
+        <column xsi:type="varchar" name="lock_owner" nullable="true" length="64" comment="Lock Owner"/>
+        <column xsi:type="int" name="last_result_id" padding="10" unsigned="true" nullable="true" comment="Last Result ID"/>
+        <column xsi:type="varchar" name="last_cache_status" nullable="true" length="255" comment="Last LiteSpeed Cache Status"/>
+        <column xsi:type="timestamp" name="last_warmed_at" nullable="true" comment="Last Warmed At"/>
+        <column xsi:type="text" name="last_error" nullable="true" comment="Last Error"/>
+        <column xsi:type="timestamp" name="last_purge_at" nullable="true" comment="Last Purge At"/>
+        <column xsi:type="int" name="purge_count" padding="10" unsigned="true" nullable="false" default="0" comment="Purge Refresh Count"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="queue_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="LITEMAGE_WARM_QUEUE_WORK_UNQ">
+            <column name="work_type"/>
+            <column name="store_id"/>
+            <column name="url_hash"/>
+            <column name="profile_id"/>
+            <column name="mode"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_QUEUE_DUE" indexType="btree">
+            <column name="work_type"/>
+            <column name="status"/>
+            <column name="is_urgent"/>
+            <column name="next_run_at"/>
+            <column name="priority"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_QUEUE_STORE_STATUS" indexType="btree">
+            <column name="store_id"/>
+            <column name="status"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_QUEUE_SOURCE_PRIORITY" indexType="btree">
+            <column name="work_type"/>
+            <column name="source"/>
+            <column name="status"/>
+            <column name="is_urgent"/>
+            <column name="priority"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_QUEUE_URL_PROFILE_MODE" indexType="btree">
+            <column name="work_type"/>
+            <column name="url_hash"/>
+            <column name="store_id"/>
+            <column name="profile_id"/>
+            <column name="mode"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_QUEUE_WORK" indexType="btree">
+            <column name="work_type"/>
+            <column name="url_id"/>
+            <column name="profile_id"/>
+            <column name="mode"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_QUEUE_LANE" indexType="btree">
+            <column name="status"/>
+            <column name="profile_id"/>
+            <column name="mode"/>
+            <column name="is_urgent"/>
+            <column name="priority"/>
+        </index>
+    </table>
+    <table name="litemage_warm_result" resource="default" engine="innodb" comment="LiteMage Warmup Results">
+        <column xsi:type="int" name="result_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Result ID"/>
+        <column xsi:type="int" name="queue_id" padding="10" unsigned="true" nullable="true" comment="Queue ID"/>
+        <column xsi:type="int" name="url_id" padding="10" unsigned="true" nullable="true" comment="URL ID"/>
+        <column xsi:type="int" name="profile_id" padding="10" unsigned="true" nullable="true" comment="Profile ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="varchar" name="url_hash" nullable="false" length="64" comment="URL Hash"/>
+        <column xsi:type="text" name="url" nullable="false" comment="URL"/>
+        <column xsi:type="varchar" name="source" nullable="true" length="32" comment="Queue Source"/>
+        <column xsi:type="varchar" name="work_type" nullable="false" length="16" default="scheduled" comment="Queue Work Type"/>
+        <column xsi:type="text" name="source_flags" nullable="true" comment="Queue Source Evidence Flags"/>
+        <column xsi:type="text" name="source_instance_key" nullable="true" comment="Source Instance Key"/>
+        <column xsi:type="int" name="source_priority" padding="10" nullable="true" comment="Source Priority"/>
+        <column xsi:type="int" name="url_priority" padding="10" nullable="true" comment="URL Priority"/>
+        <column xsi:type="varchar" name="mode" nullable="false" length="16" comment="Crawler Mode"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="16" comment="Result Status"/>
+        <column xsi:type="int" name="priority" padding="10" nullable="true" comment="Effective Priority"/>
+        <column xsi:type="int" name="http_status" padding="10" unsigned="true" nullable="true" comment="HTTP Status"/>
+        <column xsi:type="int" name="response_time_ms" padding="10" unsigned="true" nullable="true" comment="Response Time Milliseconds"/>
+        <column xsi:type="varchar" name="cache_status" nullable="true" length="255" comment="LiteSpeed Cache Status"/>
+        <column xsi:type="text" name="final_url" nullable="true" comment="Final URL"/>
+        <column xsi:type="text" name="headers_summary" nullable="true" comment="Headers Summary"/>
+        <column xsi:type="text" name="error" nullable="true" comment="Error"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="result_id"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_RESULT_QUEUE" indexType="btree">
+            <column name="queue_id"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_RESULT_STORE_CREATED" indexType="btree">
+            <column name="store_id"/>
+            <column name="created_at"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_RESULT_SOURCE_CREATED" indexType="btree">
+            <column name="source"/>
+            <column name="created_at"/>
+        </index>
+    </table>
+    <table name="litemage_warm_lane_lock" resource="default" engine="innodb" comment="LiteMage Warmup Execution Lane Locks">
+        <column xsi:type="int" name="lock_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Lock ID"/>
+        <column xsi:type="int" name="profile_id" padding="10" unsigned="true" nullable="false" default="0" comment="Profile ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="varchar" name="mode" nullable="false" length="16" comment="Crawler Mode"/>
+        <column xsi:type="varchar" name="lock_owner" nullable="false" length="64" comment="Lock Owner"/>
+        <column xsi:type="timestamp" name="locked_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Locked At"/>
+        <column xsi:type="timestamp" name="expires_at" nullable="false" comment="Expires At"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="lock_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="LITEMAGE_WARM_LANE_LOCK_UNQ">
+            <column name="profile_id"/>
+            <column name="store_id"/>
+            <column name="mode"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_LANE_LOCK_EXPIRES" indexType="btree">
+            <column name="expires_at"/>
+        </index>
+    </table>
+    <table name="litemage_warm_runner_event" resource="default" engine="innodb" comment="LiteMage Warmup Runner Events">
+        <column xsi:type="int" name="event_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Event ID"/>
+        <column xsi:type="varchar" name="runner_type" nullable="false" length="32" comment="Runner Type"/>
+        <column xsi:type="varchar" name="runner_mode" nullable="false" length="16" default="cron" comment="Runner Mode"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="running" comment="Runner Status"/>
+        <column xsi:type="timestamp" name="started_at" nullable="true" comment="Started At"/>
+        <column xsi:type="timestamp" name="finished_at" nullable="true" comment="Finished At"/>
+        <column xsi:type="text" name="summary_json" nullable="true" comment="Summary JSON"/>
+        <column xsi:type="text" name="error_text" nullable="true" comment="Error Text"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="event_id"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_RUNNER_EVENT_TYPE_STARTED" indexType="btree">
+            <column name="runner_type"/>
+            <column name="started_at"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_RUNNER_EVENT_STATUS" indexType="btree">
+            <column name="status"/>
+            <column name="started_at"/>
+        </index>
+    </table>
+    <table name="litemage_warm_purge_event" resource="default" engine="innodb" comment="LiteMage Warmup Purge Events">
+        <column xsi:type="int" name="event_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Event ID"/>
+        <column xsi:type="varchar" name="source" nullable="false" length="64" comment="Purge Source"/>
+        <column xsi:type="text" name="reason" nullable="true" comment="Purge Reason"/>
+        <column xsi:type="text" name="tags" nullable="true" comment="Purge Tags"/>
+        <column xsi:type="smallint" name="is_broad" padding="5" unsigned="true" nullable="false" default="0" comment="Is Full Scope Purge"/>
+        <column xsi:type="smallint" name="is_purge_all" padding="5" unsigned="true" nullable="false" default="0" comment="Is Purge All"/>
+        <column xsi:type="int" name="entity_count" padding="10" unsigned="true" nullable="false" default="0" comment="Entity Count"/>
+        <column xsi:type="int" name="queued_count" padding="10" unsigned="true" nullable="false" default="0" comment="Queued Count"/>
+        <column xsi:type="int" name="entity_queued_count" padding="10" unsigned="true" nullable="false" default="0" comment="Resolved Entity Queued Count"/>
+        <column xsi:type="int" name="reverse_index_queued_count" padding="10" unsigned="true" nullable="false" default="0" comment="Reverse Index Queued Count"/>
+        <column xsi:type="int" name="restarted_count" padding="10" unsigned="true" nullable="false" default="0" comment="Scheduled Restarted Count"/>
+        <column xsi:type="int" name="restart_matched_count" padding="10" unsigned="true" nullable="false" default="0" comment="Scheduled Restart Matched Count"/>
+        <column xsi:type="int" name="restart_changed_count" padding="10" unsigned="true" nullable="false" default="0" comment="Scheduled Restart Changed Count"/>
+        <column xsi:type="int" name="cleared_delta_count" padding="10" unsigned="true" nullable="false" default="0" comment="Cleared Delta Count"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="event_id"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_PURGE_EVENT_CREATED" indexType="btree">
+            <column name="created_at"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_PURGE_EVENT_SOURCE" indexType="btree">
+            <column name="source"/>
+        </index>
+    </table>
+    <table name="litemage_warm_tag_url" resource="default" engine="innodb" comment="LiteMage Warmup Bounded Tag URL Mapping">
+        <column xsi:type="int" name="index_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Index ID"/>
+        <column xsi:type="varchar" name="tag" nullable="false" length="64" comment="LiteMage Cache Tag"/>
+        <column xsi:type="int" name="url_id" padding="10" unsigned="true" nullable="false" comment="Warm URL ID"/>
+        <column xsi:type="smallint" name="store_id" padding="5" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="varchar" name="url_hash" nullable="false" length="64" comment="URL Hash"/>
+        <column xsi:type="varchar" name="page_type" nullable="true" length="32" comment="Page Type"/>
+        <column xsi:type="timestamp" name="last_seen_at" nullable="true" comment="Last Seen At"/>
+        <column xsi:type="timestamp" name="expires_at" nullable="false" comment="Expires At"/>
+        <column xsi:type="timestamp" name="created_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="false" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" nullable="false" default="CURRENT_TIMESTAMP" on_update="true" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="index_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="LITEMAGE_WARM_TAG_URL_TAG_URL">
+            <column name="tag"/>
+            <column name="url_id"/>
+        </constraint>
+        <index referenceId="LITEMAGE_WARM_TAG_URL_TAG_STORE_EXPIRES" indexType="btree">
+            <column name="tag"/>
+            <column name="store_id"/>
+            <column name="expires_at"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_TAG_URL_URL" indexType="btree">
+            <column name="url_id"/>
+        </index>
+        <index referenceId="LITEMAGE_WARM_TAG_URL_EXPIRES" indexType="btree">
+            <column name="expires_at"/>
+        </index>
+    </table>
+</schema>

@@ -13,4 +13,16 @@
     <type name="\Magento\Framework\App\Response\Http">
         <plugin name="response-http-litemage-admpurge" type="\Litespeed\Litemage\Model\App\Response\HttpPurgePlugin" sortOrder="10"/>
     </type>
+    <type name="Magento\Framework\View\Element\Message\MessageConfigurationsPool">
+        <arguments>
+            <argument name="configurationsMap" xsi:type="array">
+                <item name="litemageWarmupSourcesChanged" xsi:type="array">
+                    <item name="renderer" xsi:type="const">\Magento\Framework\View\Element\Message\Renderer\BlockRenderer::CODE</item>
+                    <item name="data" xsi:type="array">
+                        <item name="template" xsi:type="string">Litespeed_Litemage::messages/warmup_sources_changed.phtml</item>
+                    </item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
 </config>

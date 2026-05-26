@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <job name="litemage_warmup_generate" instance="Litespeed\Litemage\Cron\WarmupGenerate" method="execute">
+            <config_path>litemage/warmup/generate_cron_schedule</config_path>
+        </job>
+        <job name="litemage_warmup_process" instance="Litespeed\Litemage\Cron\WarmupProcess" method="execute">
+            <config_path>litemage/warmup/process_cron_schedule</config_path>
+        </job>
+        <job name="litemage_warmup_cleanup" instance="Litespeed\Litemage\Cron\WarmupCleanup" method="execute">
+            <schedule>0 3 * * *</schedule>
+        </job>
+    </group>
+</config>

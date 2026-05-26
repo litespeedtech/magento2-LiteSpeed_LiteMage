@@ -37,6 +37,7 @@ class CachePurge
     private $_debug;
 	private $ignored_cache_tags;
 	private $ignored_purge_tags;
+    private $purgeEventRecorder;
 
 
     /**
@@ -47,11 +48,13 @@ class CachePurge
      */
     public function __construct(
             \Litespeed\Litemage\Model\Config $config,
-            \Litespeed\Litemage\Helper\Data $helper
+            \Litespeed\Litemage\Helper\Data $helper,
+            \Litespeed\Litemage\Model\Warmup\PurgeEventRecorder $purgeEventRecorder
     )
     {
         $this->config = $config;
         $this->helper = $helper;
+        $this->purgeEventRecorder = $purgeEventRecorder;
         $this->_debug = $this->helper->debugEnabled();
 		$this->ignored_cache_tags = $this->config->getIgnoredTags();
 		$this->ignored_purge_tags = $this->config->getIgnoredPurgeTags();
@@ -102,6 +105,9 @@ class CachePurge
                                             $source, 
                                             implode(',', $this->_purgeTags)));
             $this->helper->debugTrace($source);
+        }
+        if ($added && $this->purgeEventRecorder) {
+            $this->purgeEventRecorder->record($this->_purgeTags, $source, $this->_isPurgeAll);
         }
 		return $added;
     }

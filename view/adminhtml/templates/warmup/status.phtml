@@ -1,0 +1,99 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/** @var \Litespeed\Litemage\Block\Adminhtml\Warmup\Dashboard $block */
+$queueSummary = $block->getQueueSummary();
+$reverseIndex = $block->getReverseIndexSummary();
+?>
+<?= $block->getChildHtml('litemage.warmup.navigation') ?>
+
+<div class="admin__data-grid-wrap">
+    <table class="data-grid">
+        <thead>
+        <tr>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Area')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Status')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Details')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Action')) ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><?= $block->escapeHtml(__('Warmer')) ?></td>
+            <td>
+                <strong><?= $block->escapeHtml($block->isWarmupEnabled() ? __('Enabled') : __('Disabled')) ?></strong>
+            </td>
+            <td>
+                <?= $block->escapeHtml(__(
+                    'Build Queue runs on %1. Run Queue runs on %2.',
+                    $block->getWarmupGenerateCronSchedule(),
+                    $block->getWarmupProcessCronSchedule()
+                )) ?>
+            </td>
+            <td>
+                <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getConfigUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('Open Config')) ?></span>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td><?= $block->escapeHtml(__('Warmup Queue')) ?></td>
+            <td><?= $queueSummary ? $block->escapeHtml(__('Has Rows')) : $block->escapeHtml(__('Empty')) ?></td>
+            <td>
+                <?php if ($queueSummary): ?>
+                    <?php foreach ($queueSummary as $status => $count): ?>
+                        <?= $block->escapeHtml($status) ?>: <?= (int)$count ?>&nbsp;
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <?= $block->escapeHtml(__('No queued warmup URLs.')) ?>
+                <?php endif; ?>
+            </td>
+            <td>
+                <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getQueueUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('Open Queue')) ?></span>
+                </button>
+                <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getProgressUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('View Progress')) ?></span>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td><?= $block->escapeHtml(__('Results')) ?></td>
+            <td><?= $block->escapeHtml(__('History')) ?></td>
+            <td><?= $block->escapeHtml(__('Recent warmup attempts, response codes, cache status, and errors.')) ?></td>
+            <td>
+                <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getResultsUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('Open Results')) ?></span>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td><?= $block->escapeHtml(__('Purge Events')) ?></td>
+            <td><?= $block->escapeHtml(__('History')) ?></td>
+            <td><?= $block->escapeHtml(__('Recent purge tags and purge-driven warmup queue updates.')) ?></td>
+            <td>
+                <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getPurgeEventsUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('Open Purge Events')) ?></span>
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td><?= $block->escapeHtml(__('Tag-to-URL Index')) ?></td>
+            <td><?= (int)$reverseIndex['active_rows'] ?> / <?= (int)$reverseIndex['rows'] ?> <?= $block->escapeHtml(__('active rows')) ?></td>
+            <td>
+                <?= $block->escapeHtml(__('tags %1, URLs %2, expired %3, storage %4', (int)$reverseIndex['tags'], (int)$reverseIndex['urls'], (int)$reverseIndex['expired_rows'], $block->formatBytes($reverseIndex['storage_bytes']))) ?>
+            </td>
+            <td>
+                <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getReverseIndexConfigUrl()) ?>')">
+                    <span><?= $block->escapeHtml(__('Configure Tag-to-URL Index')) ?></span>
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

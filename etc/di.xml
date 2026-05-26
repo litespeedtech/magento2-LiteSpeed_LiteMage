@@ -20,6 +20,19 @@
             </argument>
         </arguments>
     </type>
+    <type name="Litespeed\Litemage\Logger\WarmupHandler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Litespeed\Litemage\Logger\WarmupLogger">
+        <arguments>
+            <argument name="name" xsi:type="string">LiteMageWarmup</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="warmup" xsi:type="object">Litespeed\Litemage\Logger\WarmupHandler</item>
+            </argument>
+        </arguments>
+    </type>
     <type name="Magento\Framework\Console\CommandListInterface">
         <arguments>
             <argument name="commands" xsi:type="array">
@@ -27,6 +40,18 @@
                 <item name="litemageFlushProdsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushProds</item>
                 <item name="litemageFlushCatsCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageFlushCats</item>
                 <item name="litemageCliFlushCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageCliFlush</item>
+                <item name="litemageWarmQueueGenerateCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmQueueGenerate</item>
+                <item name="litemageWarmQueueProcessCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmQueueProcess</item>
+                <item name="litemageWarmUrlCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmUrl</item>
+                <item name="litemageWarmStatusCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmStatus</item>
+                <item name="litemageWarmPauseCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmPause</item>
+                <item name="litemageWarmResumeCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmResume</item>
+                <item name="litemageWarmTruncateCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmTruncate</item>
+                <item name="litemageWarmBlacklistCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmBlacklist</item>
+                <item name="litemageWarmSourceValidateCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmSourceValidate</item>
+                <item name="litemageWarmProfileListCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmProfileList</item>
+                <item name="litemageWarmProfileUpsertCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmProfileUpsert</item>
+                <item name="litemageWarmProfileDiagnoseCommand" xsi:type="object">Litespeed\Litemage\Console\Command\LitemageWarmProfileDiagnose</item>
             </argument>
         </arguments>
     </type>

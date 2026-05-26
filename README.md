@@ -76,4 +76,6 @@ The following steps assume that the Prerequisites mentioned above are met.
 
 No further changes to your Magento 2 configurations should be necessary as LiteMage honors the same cacheable settings as varnish in the layout xml files.
 
+## Cache Warmer
 
+LiteMage includes an optional cache warmer for preloading selected store URLs and variants. For setup, operation, and troubleshooting guidance, see [docs/cache-warmer-user-guide.md](docs/cache-warmer-user-guide.md).

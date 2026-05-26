@@ -22,6 +22,45 @@
                 <ignored_purge_tags>compare_item_*, wishlist_*</ignored_purge_tags>
                 <disable_cli_purge>0</disable_cli_purge>
             </purge>
+            <warmup>
+                <enabled>0</enabled>
+                <sources>sitemap,text_file</sources>
+                <cron_schedule>*/5 * * * *</cron_schedule>
+                <process_cron_schedule>*/5 * * * *</process_cron_schedule>
+                <generate_cron_schedule>0 3 * * *</generate_cron_schedule>
+                <batch_size>50</batch_size>
+                <concurrency>2</concurrency>
+                <request_timeout>30</request_timeout>
+                <crawl_delay_ms>250</crawl_delay_ms>
+                <max_runtime>240</max_runtime>
+                <max_load_average>0</max_load_average>
+                <max_attempts>3</max_attempts>
+                <queue_limit_per_store>10000</queue_limit_per_store>
+                <recrawl_interval_seconds>0</recrawl_interval_seconds>
+                <result_retention_days>30</result_retention_days>
+                <default_full_mode>runner</default_full_mode>
+                <delta_enabled>1</delta_enabled>
+                <store_policy/>
+                <sitemap_paths/>
+                <text_file_paths/>
+                <text_file_source_priority>20</text_file_source_priority>
+                <sitemap_source_priority>100</sitemap_source_priority>
+                <url_rewrite_source_priority>200</url_rewrite_source_priority>
+                <purge_entity_source_priority>10</purge_entity_source_priority>
+                <allowed_query_params/>
+                <url_rewrite_entity_types>product,category,cms-page</url_rewrite_entity_types>
+                <currency_codes/>
+                <customer_ids/>
+                <profile_limit>10</profile_limit>
+                <queue_variant_map/>
+                <reverse_index_enabled>0</reverse_index_enabled>
+                <recently_seen_enabled>0</recently_seen_enabled>
+                <recently_seen_limit>1000</recently_seen_limit>
+                <recently_seen_source_priority>300</recently_seen_source_priority>
+                <reverse_index_max_tags_per_url>20</reverse_index_max_tags_per_url>
+                <reverse_index_max_urls_per_tag>500</reverse_index_max_urls_per_tag>
+                <reverse_index_ttl_days>7</reverse_index_ttl_days>
+            </warmup>
             <dev>
                 <debug>0</debug>
                 <debug_ips/>

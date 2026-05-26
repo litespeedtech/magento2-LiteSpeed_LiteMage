@@ -9,6 +9,7 @@
 
 namespace Litespeed\Litemage\Model;
 
+use Litespeed\Litemage\Model\Warmup\ReverseIndexRepository;
 use Magento\Framework\View\Layout\Element as Element;
 use Magento\Framework\App\Http\Context as HttpContext;
 use Magento\Store\Model\StoreManagerInterface;
@@ -78,6 +79,9 @@ class CacheControl
     /** @var \Litespeed\Litemage\Model\EsiRequestAuth */
     protected $esiRequestAuth;
 
+    /** @var ReverseIndexRepository */
+    protected $reverseIndexRepository;
+
     protected $rawVaryString; // for debug only
 
     /**
@@ -93,6 +97,7 @@ class CacheControl
      * @param \Litespeed\Litemage\Model\Config $config
      * @param \Litespeed\Litemage\Helper\Data $helper
      * @param \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth
+     * @param ReverseIndexRepository $reverseIndexRepository
      */
     public function __construct(\Magento\Framework\App\Http\Context $httpContext,
                                 \Magento\Framework\Session\SessionManagerInterface $session,
@@ -103,7 +108,8 @@ class CacheControl
                                 \Magento\Customer\Model\Session $userSession,
                                 \Litespeed\Litemage\Model\Config $config,
                                 \Litespeed\Litemage\Helper\Data $helper,
-                                \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth
+                                \Litespeed\Litemage\Model\EsiRequestAuth $esiRequestAuth,
+                                ReverseIndexRepository $reverseIndexRepository
     )
     {
         $this->httpContext = $httpContext;
@@ -116,6 +122,7 @@ class CacheControl
         $this->config = $config;
         $this->helper = $helper;
         $this->esiRequestAuth = $esiRequestAuth;
+        $this->reverseIndexRepository = $reverseIndexRepository;
         $this->_moduleEnabled = $config->moduleEnabled();
         if ($this->_moduleEnabled) {
             $this->_bypassedContext = $this->config->getBypassedContext();
@@ -416,6 +423,7 @@ class CacheControl
         }
 
         $lstags = implode(',', $tags);
+        $this->recordWarmupReverseIndex($tags);
         $tagHeaders = $this->splitTagHeaderValues($tags);
         foreach ($tagHeaders as $tagHeader) {
             $response->setHeader(self::LSHEADER_CACHE_TAG, $tagHeader);
@@ -427,6 +435,31 @@ class CacheControl
             }
         }
         return $lstags;
+    }
+
+    private function recordWarmupReverseIndex(array $tags)
+    {
+        if (!$this->isWarmupCrawlerRequest()) {
+            return;
+        }
+
+        try {
+            $storeId = (int)$this->storeManager->getStore()->getId();
+            $this->reverseIndexRepository->recordCacheableRequest(
+                $this->request->getUriString(),
+                $storeId,
+                $tags
+            );
+        } catch (\Exception $e) {
+            $this->helper->debugLog('Warmup bounded tag URL mapping skipped: ' . $e->getMessage());
+        }
+    }
+
+    private function isWarmupCrawlerRequest()
+    {
+        $userAgent = (string)$this->request->getServer('HTTP_USER_AGENT');
+        return strpos($userAgent, 'litemage_runner') !== false
+            || strpos($userAgent, 'litemage_walker') !== false;
     }
 
     protected function splitTagHeaderValues(array $tags)

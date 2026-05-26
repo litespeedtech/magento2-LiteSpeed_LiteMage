@@ -1,0 +1,338 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/** @var \Litespeed\Litemage\Block\Adminhtml\Warmup\Progress $block */
+$overall = $block->getOverallSummary();
+$queueGroups = $block->getQueueGroups();
+$runnerSummary = $block->getRunnerSummary($overall);
+$warnings = $block->getOperatorWarnings($overall, $runnerSummary);
+$segments = [
+    'warmed' => __('Warmed'),
+    'running' => __('Running'),
+    'pending' => __('Pending'),
+    'skipped' => __('Skipped'),
+    'failed' => __('Failed'),
+    'blacklisted' => __('Blacklisted'),
+];
+$runnerActionUrl = $runnerSummary['enabled'] ? $block->getPauseUrl() : $block->getResumeUrl();
+$runnerActionLabel = $runnerSummary['enabled'] ? __('Pause') : __('Resume');
+$runnerActionTitle = $runnerSummary['enabled']
+    ? __('Sets Enable Cache Warmer to No in config. Queue rows are kept.')
+    : __('Sets Enable Cache Warmer to Yes in config. Cron can process due rows again.');
+$runnerActionConfirm = $runnerSummary['enabled']
+    ? __('Pause cache warmer? This sets Enable Cache Warmer to No in config. Existing queue rows are kept.')
+    : __('Resume cache warmer? This sets Enable Cache Warmer to Yes in config. Cron and Run Queue Now can process due rows.');
+?>
+<?= $block->getChildHtml('litemage.warmup.navigation') ?>
+<form id="litemage-progress-runner-action" method="post" action="<?= $block->escapeUrl($runnerActionUrl) ?>" style="display: none;">
+    <?= $block->getBlockHtml('formkey') ?>
+</form>
+
+<div class="litemage-progress-runner">
+    <div class="litemage-progress-state <?= $block->escapeHtmlAttr($block->getStateCssClass($runnerSummary)) ?>">
+        <div class="litemage-progress-state-head">
+            <span><?= $block->escapeHtml(__('Runner State')) ?></span>
+        </div>
+        <div class="litemage-progress-state-value">
+            <strong><?= $block->escapeHtml($runnerSummary['state']) ?></strong>
+            <button type="button"
+                    class="litemage-progress-state-action"
+                    title="<?= $block->escapeHtmlAttr($runnerActionTitle) ?>"
+                    aria-label="<?= $block->escapeHtmlAttr($runnerActionTitle) ?>"
+                    data-confirm="<?= $block->escapeHtmlAttr($runnerActionConfirm) ?>">
+                <?= $block->escapeHtml($runnerActionLabel) ?>
+            </button>
+        </div>
+        <a class="litemage-progress-config-link"
+           href="<?= $block->escapeUrl($block->getWarmupConfigUrl()) ?>">
+            <?= $block->escapeHtml(__('Configure Queues / Variants')) ?>
+        </a>
+    </div>
+    <div class="litemage-progress-runner-grid">
+        <div>
+            <span><?= $block->escapeHtml(__('Enabled')) ?></span>
+            <strong><?= $block->escapeHtml($runnerSummary['enabled'] ? __('Yes') : __('No')) ?></strong>
+        </div>
+        <div>
+            <span><?= $block->escapeHtml(__('Build Schedule')) ?></span>
+            <strong><?= $block->escapeHtml($runnerSummary['generate_cron_schedule']) ?></strong>
+        </div>
+        <div>
+            <span><?= $block->escapeHtml(__('Process Schedule')) ?></span>
+            <strong><?= $block->escapeHtml($runnerSummary['process_cron_schedule']) ?></strong>
+        </div>
+        <div>
+            <span><?= $block->escapeHtml(__('Current Load')) ?></span>
+            <strong><?= $block->escapeHtml($block->formatNumber($runnerSummary['current_load'])) ?></strong>
+        </div>
+        <div>
+            <span><?= $block->escapeHtml(__('Load Guard')) ?></span>
+            <strong><?= $block->escapeHtml((float)$runnerSummary['load_limit'] > 0 ? $block->formatNumber($runnerSummary['load_limit']) : __('Off')) ?></strong>
+        </div>
+        <div>
+            <span><?= $block->escapeHtml(__('Due Now')) ?></span>
+            <strong><?= (int)$runnerSummary['work_state']['due_pending'] ?></strong>
+        </div>
+        <div>
+            <span><?= $block->escapeHtml(__('Lane Locks')) ?></span>
+            <strong><?= (int)$runnerSummary['work_state']['active_locks'] ?></strong>
+        </div>
+    </div>
+</div>
+
+<?php if ($warnings): ?>
+    <div class="litemage-progress-warnings">
+        <?php foreach ($warnings as $warning): ?>
+            <div><?= $block->escapeHtml($warning) ?></div>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<div class="litemage-progress-events">
+    <?php foreach (['generate', 'process', 'cleanup'] as $runnerType): ?>
+        <?php $event = $block->getRunnerEvent($runnerSummary, $runnerType); ?>
+        <div class="litemage-progress-event">
+            <div class="litemage-progress-event-head">
+                <strong><?= $block->escapeHtml($block->getRunnerEventLabel($runnerType)) ?></strong>
+                <?php if ($event): ?>
+                    <span class="<?= $block->escapeHtmlAttr('status-' . $event['status']) ?>">
+                        <?= $block->escapeHtml($block->getStatusLabel($event['status'])) ?>
+                    </span>
+                <?php else: ?>
+                    <span><?= $block->escapeHtml(__('Never run')) ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="litemage-progress-event-meta">
+                <?= $block->escapeHtml(__('Last run: %1', $block->formatDateTime($event['finished_at'] ?? null))) ?>
+            </div>
+            <div class="litemage-progress-event-summary">
+                <?= $block->escapeHtml($block->getRunnerEventSummary($event)) ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
+</div>
+
+<div class="litemage-progress-summary">
+    <div class="litemage-progress-summary-item">
+        <span><?= $block->escapeHtml(__('Total Queued URLs')) ?></span>
+        <strong><?= (int)$overall['total'] ?></strong>
+    </div>
+    <div class="litemage-progress-summary-item">
+        <span><?= $block->escapeHtml(__('Complete')) ?></span>
+        <strong><?= $block->escapeHtml($block->getCompletionPercentLabel($overall)) ?></strong>
+        <small><?= $block->escapeHtml($block->getCompletionCountLabel($overall)) ?></small>
+    </div>
+    <div class="litemage-progress-summary-item">
+        <span><?= $block->escapeHtml(__('Pending')) ?></span>
+        <strong><?= (int)$overall['pending'] ?></strong>
+    </div>
+    <div class="litemage-progress-summary-item">
+        <span><?= $block->escapeHtml(__('Running')) ?></span>
+        <strong><?= (int)$overall['running'] ?></strong>
+    </div>
+    <div class="litemage-progress-summary-item">
+        <span><?= $block->escapeHtml(__('Failed')) ?></span>
+        <strong><?= (int)$overall['failed'] ?></strong>
+    </div>
+    <div class="litemage-progress-summary-item">
+        <span><?= $block->escapeHtml(__('Urgent')) ?></span>
+        <strong><?= (int)$overall['urgent'] ?></strong>
+    </div>
+</div>
+
+<div class="litemage-progress-legend" aria-label="<?= $block->escapeHtmlAttr(__('Progress bar legend')) ?>">
+    <div class="litemage-progress-legend-items">
+        <span class="litemage-progress-legend-title"><?= $block->escapeHtml(__('Progress Bar')) ?></span>
+        <?php foreach ($segments as $key => $label): ?>
+            <span title="<?= $block->escapeHtmlAttr(__('%1 segment in each row progress bar', $label)) ?>">
+                <i class="litemage-progress-dot <?= $block->escapeHtmlAttr($key) ?>"></i><?= $block->escapeHtml($label) ?>
+            </span>
+        <?php endforeach; ?>
+    </div>
+    <button type="button"
+            class="action-default litemage-progress-refresh"
+            onclick="setLocation('<?= $block->escapeUrl($block->getProgressUrl()) ?>')">
+        <span><?= $block->escapeHtml(__('Refresh')) ?></span>
+    </button>
+</div>
+
+<div class="admin__data-grid-wrap">
+    <table class="data-grid litemage-progress-table">
+        <thead>
+        <tr>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Queue / Sublane')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Progress')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Pending')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Running')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Warmed')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Skipped')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Failed')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Urgent')) ?></th>
+            <th class="data-grid-th"
+                title="<?= $block->escapeHtmlAttr(__('Source memberships covered by higher-priority effective queue work. These rows do not create separate crawler requests.')) ?>">
+                <?= $block->escapeHtml(__('Covered')) ?>
+            </th>
+            <th class="data-grid-th"
+                title="<?= $block->escapeHtmlAttr(__('Configured source or source-instance priority. Lower numbers run earlier.')) ?>">
+                <?= $block->escapeHtml(__('Base Priority')) ?>
+            </th>
+            <th class="data-grid-th"
+                title="<?= $block->escapeHtmlAttr(__('Lowest effective URL work priority in this row after URL and variant offsets. Lower numbers run earlier.')) ?>">
+                <?= $block->escapeHtml(__('Top Work Priority')) ?>
+            </th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Oldest Pending')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Latest Warmed')) ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php if (!$queueGroups): ?>
+            <tr>
+                <td colspan="13"><?= $block->escapeHtml(__('No queued warmup URLs.')) ?></td>
+            </tr>
+        <?php endif; ?>
+        <?php foreach ($queueGroups as $queueIndex => $queueGroup): ?>
+            <?php
+            $queueGroupId = 'litemage-progress-queue-' . (int)$queueIndex;
+            $laneCount = count($queueGroup['lanes']);
+            $expandLabel = __('Sublanes (%1)', $laneCount);
+            $collapseLabel = __('Hide Sublanes (%1)', $laneCount);
+            $queueStatusLine = $block->getQueueStatusLine($queueGroup);
+            ?>
+            <tr class="litemage-progress-queue-row">
+                <td>
+                    <div class="litemage-progress-queue-heading">
+                        <span><?= $block->escapeHtml(__('Queue')) ?></span>
+                        <strong><?= $block->escapeHtml($block->getQueueName($queueGroup)) ?></strong>
+                        <button class="litemage-progress-toggle"
+                                type="button"
+                                aria-expanded="false"
+                                aria-label="<?= $block->escapeHtmlAttr(__('Show sublanes for %1', $block->getQueueName($queueGroup))) ?>"
+                                data-target="<?= $block->escapeHtmlAttr($queueGroupId) ?>"
+                                data-expand-label="<?= $block->escapeHtmlAttr($expandLabel) ?>"
+                                data-collapse-label="<?= $block->escapeHtmlAttr($collapseLabel) ?>">
+                            <?= $block->escapeHtml($expandLabel) ?>
+                        </button>
+                    </div>
+                    <div class="litemage-progress-queue-instance" title="<?= $block->escapeHtmlAttr($queueGroup['source_instance_key']) ?>">
+                        <?= $block->escapeHtml($block->getQueueSourceLabel($queueGroup)) ?>
+                    </div>
+                    <?php if ($queueStatusLine): ?>
+                        <div class="litemage-progress-status-line">
+                            <?= $block->escapeHtml($queueStatusLine) ?>
+                        </div>
+                    <?php endif; ?>
+                </td>
+                <td class="litemage-progress-cell">
+                    <div class="litemage-progress-percent">
+                        <strong><?= $block->escapeHtml($block->getCompletionPercentLabel($queueGroup)) ?></strong>
+                        <small><?= $block->escapeHtml($block->getCompletionCountLabel($queueGroup)) ?></small>
+                    </div>
+                    <div class="litemage-progress-bar"
+                         title="<?= $block->escapeHtmlAttr($block->getCompletionLabel($queueGroup)) ?>">
+                        <?php foreach ($segments as $key => $label): ?>
+                            <?php $width = $block->getSegmentPercent($queueGroup, $key); ?>
+                            <?php if ($width > 0): ?>
+                                <span class="litemage-progress-segment <?= $block->escapeHtmlAttr($key) ?>"
+                                      style="width: <?= $block->escapeHtmlAttr($width) ?>%;"
+                                      title="<?= $block->escapeHtmlAttr(__('%1: %2', $label, (int)$queueGroup[$key])) ?>"></span>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </td>
+                <td><?= (int)$queueGroup['pending'] ?></td>
+                <td><?= (int)$queueGroup['running'] ?></td>
+                <td><?= (int)$queueGroup['warmed'] ?></td>
+                <td><?= (int)$queueGroup['skipped'] ?></td>
+                <td><?= (int)$queueGroup['failed'] ?></td>
+                <td><?= (int)$queueGroup['urgent'] ?></td>
+                <td><?= (int)$queueGroup['covered'] ?></td>
+                <td><?= (int)$queueGroup['source_priority'] ?></td>
+                <td><?= $block->escapeHtml($block->getPriorityLabel($queueGroup)) ?></td>
+                <td><?= $block->escapeHtml($block->getDueLabel($queueGroup)) ?></td>
+                <td><?= $block->escapeHtml($block->formatDateTime($queueGroup['latest_warmed_at'])) ?></td>
+            </tr>
+            <?php foreach ($queueGroup['lanes'] as $lane): ?>
+            <?php $sublaneStatusLine = $block->getSublaneStatusLine($lane); ?>
+            <tr class="litemage-progress-lane-row _hidden"
+                data-group="<?= $block->escapeHtmlAttr($queueGroupId) ?>">
+                <td>
+                    <div class="litemage-progress-sublane">
+                        <span><?= $block->escapeHtml(__('Sublane')) ?></span>
+                        <strong><?= $block->escapeHtml($block->getLaneLabel($lane)) ?></strong>
+                    </div>
+                    <div class="litemage-progress-lane-meta">
+                        <?= $block->escapeHtml(__('Profile %1', $lane['profile_code'])) ?>
+                    </div>
+                    <?php if ($sublaneStatusLine): ?>
+                        <div class="litemage-progress-status-line">
+                            <?= $block->escapeHtml($sublaneStatusLine) ?>
+                        </div>
+                    <?php endif; ?>
+                    <div class="litemage-progress-lane-actions">
+                        <a href="<?= $block->escapeUrl($block->getLaneQueueUrl($lane)) ?>">
+                            <?= $block->escapeHtml(__('View Queue')) ?>
+                        </a>
+                        <a href="<?= $block->escapeUrl($block->getLaneResultsUrl($lane)) ?>">
+                            <?= $block->escapeHtml(__('View Results')) ?>
+                        </a>
+                    </div>
+                </td>
+                <td class="litemage-progress-cell">
+                    <div class="litemage-progress-percent">
+                        <strong><?= $block->escapeHtml($block->getCompletionPercentLabel($lane)) ?></strong>
+                        <small><?= $block->escapeHtml($block->getCompletionCountLabel($lane)) ?></small>
+                    </div>
+                    <div class="litemage-progress-bar"
+                         title="<?= $block->escapeHtmlAttr($block->getCompletionLabel($lane)) ?>">
+                        <?php foreach ($segments as $key => $label): ?>
+                            <?php $width = $block->getSegmentPercent($lane, $key); ?>
+                            <?php if ($width > 0): ?>
+                                <span class="litemage-progress-segment <?= $block->escapeHtmlAttr($key) ?>"
+                                      style="width: <?= $block->escapeHtmlAttr($width) ?>%;"
+                                      title="<?= $block->escapeHtmlAttr(__('%1: %2', $label, (int)$lane[$key])) ?>"></span>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </td>
+                <td><?= (int)$lane['pending'] ?></td>
+                <td><?= (int)$lane['running'] ?></td>
+                <td><?= (int)$lane['warmed'] ?></td>
+                <td><?= (int)$lane['skipped'] ?></td>
+                <td><?= (int)$lane['failed'] ?></td>
+                <td><?= (int)$lane['urgent'] ?></td>
+                <td><?= (int)$lane['covered'] ?></td>
+                <td><?= (int)$lane['source_priority'] ?></td>
+                <td><?= $block->escapeHtml($block->getPriorityLabel($lane)) ?></td>
+                <td><?= $block->escapeHtml($block->getDueLabel($lane)) ?></td>
+                <td><?= $block->escapeHtml($block->formatDateTime($lane['latest_warmed_at'])) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+
+<script>
+require(['jquery'], function ($) {
+    $('.litemage-progress-state-action').on('click', function () {
+        if (confirm($(this).attr('data-confirm'))) {
+            $('#litemage-progress-runner-action').trigger('submit');
+        }
+    });
+
+    $('.litemage-progress-toggle').on('click', function () {
+        var button = $(this);
+        var group = button.data('target');
+        var expanded = button.attr('aria-expanded') === 'true';
+
+        $('.litemage-progress-lane-row[data-group="' + group + '"]').toggleClass('_hidden', expanded);
+        button.attr('aria-expanded', expanded ? 'false' : 'true');
+        button.text(expanded ? button.data('expand-label') : button.data('collapse-label'));
+    });
+});
+</script>

@@ -1,0 +1,269 @@
+<?php
+/**
+ * LiteMage
+ * @package   LiteSpeed_LiteMage
+ * @copyright Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license   https://opensource.org/licenses/GPL-3.0
+ */
+
+/** @var \Litespeed\Litemage\Block\Adminhtml\Warmup\Results $block */
+$rows = $block->getRows();
+$activeFilter = $block->getActiveFilterLabel();
+$currentPage = $block->getCurrentPage();
+$totalPages = $block->getTotalPages();
+$pageSize = $block->getPageSize();
+?>
+<form class="litemage-results-filters"
+      method="get"
+      action="<?= $block->escapeUrl($block->getFilterActionUrl()) ?>">
+    <input type="hidden" name="page" value="1"/>
+    <div class="litemage-results-filter-grid">
+        <label class="litemage-results-filter-url">
+            <span><?= $block->escapeHtml(__('URL')) ?></span>
+            <input class="admin__control-text"
+                   type="text"
+                   name="url"
+                   value="<?= $block->escapeHtmlAttr($block->getFilterValue('url')) ?>"
+                   placeholder="<?= $block->escapeHtmlAttr(__('Allow partial URL')) ?>"/>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Store')) ?></span>
+            <select class="admin__control-select" name="store_id">
+                <?php foreach ($block->getStoreFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('store_id', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="litemage-results-profile-filter">
+            <span><?= $block->escapeHtml(__('Profile')) ?></span>
+            <select class="admin__control-select" name="profile_id">
+                <?php foreach ($block->getProfileFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('profile_id', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Work Type')) ?></span>
+            <select class="admin__control-select" name="work_type">
+                <?php foreach ($block->getWorkTypeFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('work_type', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Result Status')) ?></span>
+            <select class="admin__control-select" name="status">
+                <?php foreach ($block->getStatusFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('status', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Lane')) ?></span>
+            <select class="admin__control-select" name="lane">
+                <?php foreach ($block->getLaneFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('lane', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('HTTP Code')) ?></span>
+            <select class="admin__control-select" name="http_status">
+                <?php foreach ($block->getHttpStatusFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('http_status', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('Cache')) ?></span>
+            <select class="admin__control-select" name="cache_status">
+                <?php foreach ($block->getCacheStatusFilterOptions() as $option): ?>
+                    <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"<?= $block->isFilterSelected('cache_status', $option['value']) ? ' selected="selected"' : '' ?>>
+                        <?= $block->escapeHtml($option['label']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="litemage-results-filter-error">
+            <span><?= $block->escapeHtml(__('Error')) ?></span>
+            <input class="admin__control-text" type="text" name="error_text" value="<?= $block->escapeHtmlAttr($block->getFilterValue('error_text')) ?>"/>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('From')) ?></span>
+            <input class="admin__control-text"
+                   type="date"
+                   name="date_from"
+                   min="<?= $block->escapeHtmlAttr($block->getMinResultDate()) ?>"
+                   max="<?= $block->escapeHtmlAttr($block->getMaxResultDate()) ?>"
+                   value="<?= $block->escapeHtmlAttr($block->getFilterValue('date_from')) ?>"/>
+        </label>
+        <label>
+            <span><?= $block->escapeHtml(__('To')) ?></span>
+            <input class="admin__control-text"
+                   type="date"
+                   name="date_to"
+                   min="<?= $block->escapeHtmlAttr($block->getMinResultDate()) ?>"
+                   max="<?= $block->escapeHtmlAttr($block->getMaxResultDate()) ?>"
+                   value="<?= $block->escapeHtmlAttr($block->getFilterValue('date_to')) ?>"/>
+        </label>
+    </div>
+    <div class="litemage-results-filter-actions">
+        <button type="submit" class="action-default primary">
+            <span><?= $block->escapeHtml(__('Apply Filters')) ?></span>
+        </button>
+        <button type="button" class="action-default" onclick="setLocation('<?= $block->escapeUrl($block->getClearFilterUrl()) ?>')">
+            <span><?= $block->escapeHtml(__('Clear')) ?></span>
+        </button>
+    </div>
+</form>
+
+<div class="admin__data-grid-header">
+    <div class="admin__data-grid-header-row">
+        <div>
+            <?= $block->escapeHtml(__('Showing %1-%2 of %3 result rows', $block->getFirstItemNumber(), $block->getLastItemNumber(), $block->getTotalRows())) ?>
+            <?php if ($activeFilter): ?>
+                <span class="litemage-results-active-filter">
+                    <?= $block->escapeHtml(__('Filtered by %1', $activeFilter)) ?>
+                </span>
+            <?php endif; ?>
+        </div>
+        <div class="admin__data-grid-pager-wrap">
+            <select class="admin__control-select litemage-grid-per-page"
+                    title="<?= $block->escapeHtmlAttr(__('Rows per page')) ?>"
+                    onchange="setLocation(this.options[this.selectedIndex].getAttribute('data-url'))">
+                    <?php foreach ($block->getPageSizeOptions() as $option): ?>
+                        <option data-url="<?= $block->escapeUrl($block->getPagerUrl(1, $option)) ?>"<?= $option === $pageSize ? ' selected="selected"' : '' ?>>
+                            <?= $block->escapeHtml(__('%1 per page', (int)$option)) ?>
+                        </option>
+                    <?php endforeach; ?>
+            </select>
+            <button type="button"
+                    class="action-previous litemage-results-pager"
+                    <?= $currentPage <= 1 ? 'disabled="disabled"' : '' ?>
+                    data-url="<?= $block->escapeUrl($block->getPagerUrl($currentPage - 1)) ?>"
+                    title="<?= $block->escapeHtmlAttr(__('Previous page')) ?>">
+                <span><?= $block->escapeHtml(__('Previous page')) ?></span>
+            </button>
+            <input class="admin__control-text litemage-grid-page-input"
+                   type="number"
+                   min="1"
+                   max="<?= (int)$totalPages ?>"
+                   value="<?= (int)$currentPage ?>"
+                   data-total-pages="<?= (int)$totalPages ?>"
+                   title="<?= $block->escapeHtmlAttr(__('Page')) ?>"/>
+            <span class="litemage-grid-page-total"><?= $block->escapeHtml(__('of %1', $totalPages)) ?></span>
+            <button type="button"
+                    class="action-next litemage-results-pager"
+                    <?= $currentPage >= $totalPages ? 'disabled="disabled"' : '' ?>
+                    data-url="<?= $block->escapeUrl($block->getPagerUrl($currentPage + 1)) ?>"
+                    title="<?= $block->escapeHtmlAttr(__('Next page')) ?>">
+                <span><?= $block->escapeHtml(__('Next page')) ?></span>
+            </button>
+        </div>
+    </div>
+</div>
+<div class="admin__data-grid-wrap">
+    <table class="data-grid">
+        <thead>
+        <tr>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('ID')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Created')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Status')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('HTTP')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Time ms')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Cache')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Store')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Profile')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Work Type')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Lane')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Priority')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Mode')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('URL')) ?></th>
+            <th class="data-grid-th"><?= $block->escapeHtml(__('Error')) ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php if (!$rows): ?>
+            <tr>
+                <td colspan="14"><?= $block->escapeHtml(__('No warmup result rows.')) ?></td>
+            </tr>
+        <?php endif; ?>
+        <?php foreach ($rows as $row): ?>
+            <?php $alsoFound = $block->getAlsoFoundSourceLabels($row); ?>
+            <tr>
+                <td><?= (int)$row['result_id'] ?></td>
+                <td><?= $block->escapeHtml($row['created_at']) ?></td>
+                <td><?= $block->escapeHtml($row['status']) ?></td>
+                <td><?= $row['http_status'] === null ? '' : (int)$row['http_status'] ?></td>
+                <td><?= $row['response_time_ms'] === null ? '' : (int)$row['response_time_ms'] ?></td>
+                <td title="<?= $block->escapeHtmlAttr($row['cache_status'] ?: __('No X-LiteSpeed-Cache header')) ?>">
+                    <span class="<?= $block->escapeHtmlAttr($block->getCacheClass($row['cache_status'])) ?>">
+                        <?= $block->escapeHtml($block->getCacheDisplay($row['cache_status'])) ?>
+                    </span>
+                </td>
+                <td><?= (int)$row['store_id'] ?></td>
+                <td title="<?= $block->escapeHtmlAttr((string)($row['profile_id'] === null ? 0 : (int)$row['profile_id'])) ?>">
+                    <?= $block->escapeHtml($block->getProfileDisplayLabel($row)) ?>
+                </td>
+                <td><?= $block->escapeHtml($block->getWorkTypeLabel($row['work_type'] ?? '')) ?></td>
+                <td title="<?= $block->escapeHtmlAttr(($row['source'] ?? '') . ' / ' . ($row['source_instance_key'] ?? '')) ?>">
+                    <?= $block->escapeHtml($block->getLaneDisplayLabel($row)) ?>
+                    <?php if ($alsoFound): ?>
+                        <div class="litemage-results-subtext">
+                            <?= $block->escapeHtml(__('Also: %1', implode(', ', $alsoFound))) ?>
+                        </div>
+                    <?php endif; ?>
+                </td>
+                <td><?= $row['priority'] === null ? '' : (int)$row['priority'] ?></td>
+                <td><?= $block->escapeHtml($row['mode']) ?></td>
+                <td title="<?= $block->escapeHtmlAttr($row['url']) ?>"><?= $block->escapeHtml($block->shorten($row['url'])) ?></td>
+                <td title="<?= $block->escapeHtmlAttr($row['error']) ?>"><?= $block->escapeHtml($block->shorten($row['error'])) ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<script>
+require([], function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.litemage-results-pager'), function (button) {
+        button.addEventListener('click', function () {
+            if (!button.disabled) {
+                setLocation(button.getAttribute('data-url'));
+            }
+        });
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.litemage-grid-page-input'), function (input) {
+        var goToPage = function () {
+            var totalPages = parseInt(input.getAttribute('data-total-pages'), 10) || 1;
+            var page = parseInt(input.value, 10) || 1;
+            page = Math.max(1, Math.min(page, totalPages));
+            input.value = page;
+
+            var url = new URL(window.location.href);
+            url.searchParams.set('page', page);
+            setLocation(url.toString());
+        };
+
+        input.addEventListener('change', goToPage);
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                goToPage();
+            }
+        });
+    });
+});
+</script>

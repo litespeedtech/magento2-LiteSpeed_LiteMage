@@ -13,6 +13,10 @@
             <label>LiteMage Cache</label>
             <tab>advanced</tab>
             <resource>Magento_Config::config_system</resource>
+            <group id="section_tabs" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>LiteMage Cache Sections</label>
+                <frontend_model>Litespeed\Litemage\Block\Adminhtml\System\Config\SectionTabs</frontend_model>
+            </group>
             <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
                 <label>General Settings</label>
                 <field id="contextbypass" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
@@ -108,9 +112,252 @@
                 <field id="basic_auth" translate="label comment" type="obscure" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
                     <label>Basic Authentication</label>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
-                    <comment>If your site uses Basic Authentication, the CLI flush command will send an HTTPS request. 
+                    <comment>If your site uses Basic Authentication, the CLI flush command will send an HTTPS request.
                         Without a username and password, the request will fail. Please input credentials in the "username:password" format.</comment>
                 </field>
+            </group>
+            <group id="warmup" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Cache Warmer</label>
+                <attribute type="expanded">1</attribute>
+                <group id="warmup_status" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Status and Schedule</label>
+                    <attribute type="expanded">1</attribute>
+                    <frontend_model>Litespeed\Litemage\Block\Adminhtml\System\Config\WarmupStatusFieldset</frontend_model>
+                    <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Enable Cache Warmer</label>
+                        <comment>Runs the LiteMage cache warmer queue. Keep disabled until queue sources and limits are configured.</comment>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <config_path>litemage/warmup/enabled</config_path>
+                    </field>
+                    <field id="sources" translate="label comment" type="multiselect" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>URL Sources</label>
+                        <comment>Sources used when building the scheduled warmup queue. Build Queue adds/updates selected sources and removes work from scheduled sources no longer selected. Queue Build cron applies this automatically, but it does not crawl URLs; Queue Process cron handles due rows separately. Run Build Queue manually to apply source changes immediately. Each source has a default priority below. Lower priority numbers run earlier. Purge-driven delta warmup is event-driven and controlled separately below.</comment>
+                        <source_model>Litespeed\Litemage\Model\System\Config\Source\WarmupUrlSource</source_model>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupSources</backend_model>
+                        <config_path>litemage/warmup/sources</config_path>
+                    </field>
+                    <field id="process_cron_schedule" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Queue Process Cron Schedule</label>
+                        <comment>Cron expression for litemage_warmup_process (Run Queue). Default is every five minutes. The schedule must use five cron fields and cannot run more often than every five minutes.</comment>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupCronSchedule</backend_model>
+                        <config_path>litemage/warmup/process_cron_schedule</config_path>
+                    </field>
+                    <field id="generate_cron_schedule" translate="label comment" type="text" sortOrder="45" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Queue Build Cron Schedule</label>
+                        <comment>Cron expression for litemage_warmup_generate (Build Queue). Default is daily at 03:00 server time. Build Queue refreshes configured sources, removes disabled scheduled-source work, and cleans stale recently seen queue rows. It does not run the crawler; litemage_warmup_process handles due queue rows. The schedule must use five cron fields and cannot run more than once per day.</comment>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupCronSchedule</backend_model>
+                        <config_path>litemage/warmup/generate_cron_schedule</config_path>
+                    </field>
+                </group>
+                <group id="warmup_worker" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Queue Processing Limits</label>
+                    <field id="batch_size" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Batch Size</label>
+                        <comment>Maximum number of due queue rows processed by one queue run.</comment>
+                        <config_path>litemage/warmup/batch_size</config_path>
+                    </field>
+                    <field id="concurrency" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Concurrency</label>
+                        <comment>Maximum concurrent warmup requests per queue process.</comment>
+                        <config_path>litemage/warmup/concurrency</config_path>
+                    </field>
+                    <field id="request_timeout" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Request Timeout</label>
+                        <comment>Warmup request timeout in seconds.</comment>
+                        <config_path>litemage/warmup/request_timeout</config_path>
+                    </field>
+                    <field id="crawl_delay_ms" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Crawl Delay</label>
+                        <comment>Delay between warmup requests in milliseconds.</comment>
+                        <config_path>litemage/warmup/crawl_delay_ms</config_path>
+                    </field>
+                    <field id="max_runtime" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Max Runtime</label>
+                        <comment>Maximum time one queue run may spend processing queued URLs, in seconds. Set this lower than the warmer cron interval, for example 240 seconds for a 5-minute cron, so queue runs do not overlap.</comment>
+                        <config_path>litemage/warmup/max_runtime</config_path>
+                    </field>
+                    <field id="max_load_average" translate="label comment" type="text" sortOrder="55" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Max Server Load Average</label>
+                        <comment>Skip warmup when the 1-minute system load average is at or above this value. Use 0 to disable. Set this below the load where shopper traffic starts to slow down.</comment>
+                        <config_path>litemage/warmup/max_load_average</config_path>
+                    </field>
+                    <field id="max_attempts" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Max Attempts</label>
+                        <comment>Maximum attempts before a queue row is marked failed.</comment>
+                        <config_path>litemage/warmup/max_attempts</config_path>
+                    </field>
+                    <field id="queue_limit_per_store" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Queue Limit Per Store</label>
+                        <comment>Hard cap for generated source URLs per store before variant expansion. Each admitted URL is queued for all configured variants.</comment>
+                        <config_path>litemage/warmup/queue_limit_per_store</config_path>
+                    </field>
+                    <field id="recrawl_interval_seconds" translate="label comment" type="text" sortOrder="75" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Regular Recrawl Interval</label>
+                        <comment>Seconds between successful scheduled warmups. Use 0 or blank for auto from Magento public TTL: litemage_runner uses the TTL, while litemage_walker uses slightly less than the TTL. Set -1 to disable recurring scheduled recrawl. Purge-driven rows remain one-shot.</comment>
+                        <config_path>litemage/warmup/recrawl_interval_seconds</config_path>
+                    </field>
+                </group>
+                <group id="warmup_modes" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Crawl Modes and Delta</label>
+                    <field id="default_full_mode" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Scheduled Crawl Mode</label>
+                        <comment>Default is litemage_runner for lighter scheduled crawls: LiteSpeed serves HITs and Magento is reached only on MISS. Use litemage_walker only when the scheduled crawl should force a Magento backend request even if the page is already cached; this can refresh and extend cached objects, but it is heavier.</comment>
+                        <source_model>Litespeed\Litemage\Model\System\Config\Source\WarmupCrawlerMode</source_model>
+                        <config_path>litemage/warmup/default_full_mode</config_path>
+                    </field>
+                    <field id="delta_enabled" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Enable Purge-Driven Delta Warmup</label>
+                        <comment>Event-driven warmup after LiteMage purge events using litemage_runner. Example: if product P123 is purged and Magento can resolve it to /some-product.html, that product URL is queued immediately as urgent warmup. Category and CMS page purges behave the same way when their direct frontend URLs can be resolved. Direct purge URLs use default priority 10, where lower numbers run earlier.</comment>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <config_path>litemage/warmup/delta_enabled</config_path>
+                    </field>
+                </group>
+                <group id="warmup_store_policy" translate="label" type="text" sortOrder="35" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Store Warmup Policy</label>
+                    <field id="store_policy" translate="label comment" type="hidden" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Store Warmup Policy</label>
+                        <comment>Controls which store views participate in scheduled warmup, purge-driven delta warmup, and Purge All recrawl. Priority offset is added after source, URL, and variant priority; lower final numbers run earlier.</comment>
+                        <frontend_model>Litespeed\Litemage\Block\Adminhtml\System\Config\StoreWarmupPolicy</frontend_model>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\StoreWarmupPolicy</backend_model>
+                        <config_path>litemage/warmup/store_policy</config_path>
+                    </field>
+                </group>
+                <group id="warmup_url_sources" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>URL Sources</label>
+                    <field id="sitemap_paths" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Sitemap Paths</label>
+                        <comment>Optional sitemap paths or URLs, one per line. CSV format: path or URL, store IDs, source priority. Store IDs use pipe separators, for example var/litemage/warmup/sitemap.xml,1|2|3,100 or https://site2.com/sitemap.xml,4|5,120. Absolute sitemap URLs are warmed only for stores whose base host matches the URL host.</comment>
+                        <config_path>litemage/warmup/sitemap_paths</config_path>
+                    </field>
+                    <field id="text_file_paths" translate="label comment" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Text/CSV File Paths</label>
+                        <comment>Optional local text or CSV files, one per line. Source format: var/litemage/warmup/file.csv,1|2|3,20. Paths must start with var/litemage/warmup/. File rows use URL, URL priority when stores are bound at the source level; relative URLs expand once per selected store, while absolute URLs must match a selected store base host.</comment>
+                        <config_path>litemage/warmup/text_file_paths</config_path>
+                    </field>
+                    <field id="allowed_query_params" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Allowed Query Parameters</label>
+                        <comment>Comma-separated public query parameter names that may be warmed, for example p for pagination. URLs with other query parameters are rejected instead of silently changed.</comment>
+                        <config_path>litemage/warmup/allowed_query_params</config_path>
+                    </field>
+                    <field id="url_rewrite_entity_types" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Magento URL Rewrite Entity Types</label>
+                        <comment>Comma-separated entity types to include from Magento's url_rewrite table when generating the Magento URL Rewrites source. Defaults to product, category, and cms-page.</comment>
+                        <config_path>litemage/warmup/url_rewrite_entity_types</config_path>
+                    </field>
+                    <field id="text_file_source_priority" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Text/CSV Source Priority</label>
+                        <comment>Optional default priority for text/CSV file URLs. Accepted range is 0-9999. Lower numbers run earlier. Blank uses default 20.</comment>
+                        <config_path>litemage/warmup/text_file_source_priority</config_path>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupPriority</backend_model>
+                    </field>
+                    <field id="sitemap_source_priority" translate="label comment" type="text" sortOrder="100" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Sitemap Source Priority</label>
+                        <comment>Optional default priority for sitemap URLs. Accepted range is 0-9999. Lower numbers run earlier. Blank uses default 100.</comment>
+                        <config_path>litemage/warmup/sitemap_source_priority</config_path>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupPriority</backend_model>
+                    </field>
+                    <field id="url_rewrite_source_priority" translate="label comment" type="text" sortOrder="110" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Magento URL Rewrites Source Priority</label>
+                        <comment>Optional default priority for Magento URL Rewrites generated from the url_rewrite table. Accepted range is 0-9999. Lower numbers run earlier. Blank uses default 200.</comment>
+                        <config_path>litemage/warmup/url_rewrite_source_priority</config_path>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupPriority</backend_model>
+                    </field>
+                    <field id="purge_entity_source_priority" translate="label comment" type="text" sortOrder="120" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Purge Event Source Priority</label>
+                        <comment>Optional default priority for purge-event warmup. Resolved entity URLs and reverse-index URLs use this urgent lane. Accepted range is 0-9999. Lower numbers run earlier inside the urgent tier. Blank uses default 10.</comment>
+                        <config_path>litemage/warmup/purge_entity_source_priority</config_path>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupPriority</backend_model>
+                    </field>
+                </group>
+                <group id="warmup_profiles" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Customer and Currency Variants</label>
+                    <field id="currency_codes" translate="label comment" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Non-default Currencies To Warm</label>
+                        <comment>Select important enabled non-default currencies whose public HTML/prices should be warmed. This setting is global, but each selected currency is warmed only for stores where that currency is enabled and is not the store default. The store default currency is already covered by the Guest profile.</comment>
+                        <source_model>Litespeed\Litemage\Model\System\Config\Source\WarmupCurrency</source_model>
+                        <config_path>litemage/warmup/currency_codes</config_path>
+                    </field>
+                    <field id="customer_ids" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Representative Customer IDs</label>
+                        <comment>Optional dedicated warmup customer IDs, separated by commas, spaces, or new lines. Use fake/admin-created accounts assigned to the customer groups that need logged-in or group-specific price warming.</comment>
+                        <config_path>litemage/warmup/customer_ids</config_path>
+                    </field>
+                    <field id="profile_limit" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Warmup Variant Limit</label>
+                        <comment>Hard cap for all variants expanded per URL, including guest, selected currencies, and representative customers. This prevents accidental queue explosion.</comment>
+                        <config_path>litemage/warmup/profile_limit</config_path>
+                    </field>
+                </group>
+                <group id="warmup_queue_variant_map" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Queue / Variant Map</label>
+                    <field id="queue_variant_map" translate="label comment" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Queue / Variant Map</label>
+                        <comment>Toggle queues and variants here, then use Save Config. Run Build Queue afterward to apply changes to queued warmup URLs. Duplicated URLs from different queues are crawled at the highest priority and are not recrawled multiple times.</comment>
+                        <frontend_model>Litespeed\Litemage\Block\Adminhtml\System\Config\QueueVariantMap</frontend_model>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\QueueVariantMap</backend_model>
+                        <config_path>litemage/warmup/queue_variant_map</config_path>
+                    </field>
+                </group>
+                <group id="warmup_reverse_index" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Tag-to-URL Index</label>
+                    <field id="reverse_index_enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Enable Tag-to-URL Index</label>
+                        <comment>Optional fallback used only when Purge-Driven Delta Warmup is enabled. Stores compact tag-to-URL mappings from cacheable crawler MISS responses, so later product/category purges can enqueue related URLs that cannot be resolved directly. Keep disabled unless direct purge warmup plus scheduled CSV/sitemap recrawls miss important pages.</comment>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <config_path>litemage/warmup/reverse_index_enabled</config_path>
+                    </field>
+                    <field id="recently_seen_enabled" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Enable Recently Seen URLs Queue</label>
+                        <comment>When the Tag-to-URL Index is enabled, Build Queue can add recently seen tagged URLs collected within the mapping TTL. This is independent from purge-driven urgent recrawls.</comment>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        <config_path>litemage/warmup/recently_seen_enabled</config_path>
+                        <depends>
+                            <field id="reverse_index_enabled">1</field>
+                        </depends>
+                    </field>
+                    <field id="recently_seen_limit" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Recently Seen URLs Limit</label>
+                        <comment>Maximum recently seen fallback URLs added during Build Queue. URLs already tied to direct product, category, or CMS page URL rewrites are skipped because purge entity warmup can queue those directly. This limit applies before variant expansion.</comment>
+                        <config_path>litemage/warmup/recently_seen_limit</config_path>
+                        <depends>
+                            <field id="reverse_index_enabled">1</field>
+                            <field id="recently_seen_enabled">1</field>
+                        </depends>
+                    </field>
+                    <field id="recently_seen_source_priority" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Recently Seen URLs Source Priority</label>
+                        <comment>Default queue priority for recently seen URLs. Accepted range is 0-9999. Lower numbers run earlier. Blank uses default 300.</comment>
+                        <config_path>litemage/warmup/recently_seen_source_priority</config_path>
+                        <backend_model>Litespeed\Litemage\Model\System\Config\Backend\WarmupPriority</backend_model>
+                        <depends>
+                            <field id="reverse_index_enabled">1</field>
+                            <field id="recently_seen_enabled">1</field>
+                        </depends>
+                    </field>
+                    <field id="reverse_index_max_tags_per_url" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Tag Mapping Max Tags Per URL</label>
+                        <comment>Maximum product/category entity tags stored for one URL.</comment>
+                        <config_path>litemage/warmup/reverse_index_max_tags_per_url</config_path>
+                    </field>
+                    <field id="reverse_index_max_urls_per_tag" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Tag Mapping Max URLs Per Tag</label>
+                        <comment>Maximum URLs retained for one tag before older mappings are dropped.</comment>
+                        <config_path>litemage/warmup/reverse_index_max_urls_per_tag</config_path>
+                    </field>
+                    <field id="reverse_index_ttl_days" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Tag Mapping TTL Days</label>
+                        <comment>Number of days before tag-to-URL mappings expire.</comment>
+                        <config_path>litemage/warmup/reverse_index_ttl_days</config_path>
+                    </field>
+                </group>
+                <group id="warmup_cleanup" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Cleanup and Retention</label>
+                    <field id="result_retention_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Queue and Result Retention Days</label>
+                        <comment>Number of days to keep warmup result history, terminal queue rows, and purge events.</comment>
+                        <config_path>litemage/warmup/result_retention_days</config_path>
+                    </field>
+                </group>
             </group>
         </section>
     </system>

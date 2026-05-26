@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @package   LiteSpeed_LiteMage
+ * @copyright  Copyright (c) LiteSpeed Technologies, Inc. All rights reserved. (https://www.litespeedtech.com)
+ * @license     https://opensource.org/licenses/GPL-3.0
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Backend::system">
+                    <resource id="Litespeed_Litemage::litemage" title="LiteMage" sortOrder="90">
+                        <resource id="Litespeed_Litemage::warmup_queue" title="LiteMage Warmup Queue" sortOrder="5"/>
+                        <resource id="Litespeed_Litemage::warmup_results" title="LiteMage Warmup Results" sortOrder="6"/>
+                        <resource id="Litespeed_Litemage::warmup_purge_events" title="LiteMage Purge Events" sortOrder="10"/>
+                    </resource>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>
