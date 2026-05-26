@@ -84,6 +84,10 @@ class Esi implements HttpGetActionInterface
             return $this->errorExit($e->getMessage(), 403);
         }
 
+        if (!$this->validateQueryParams($request)) {
+            return $this->errorExit('Invalid ESI request', 400);
+        }
+
         $block_name = $request->getParam('b');
         $handle = $request->getParam('h');
 
@@ -107,6 +111,23 @@ class Esi implements HttpGetActionInterface
         }
 
         return $this->errorExit('Invalid ESI request', 400);
+    }
+
+    private function validateQueryParams(\Magento\Framework\App\Request\Http $request)
+    {
+        $allowed = [
+            'b' => true,
+            'h' => true,
+            'sig' => true,
+        ];
+
+        foreach (array_keys($request->getQuery()->toArray()) as $key) {
+            if (!isset($allowed[$key])) {
+                return false;
+            }
+        }
+
+        return true;
     }
     
     protected function sendBlockContent($handle, $block_name)
