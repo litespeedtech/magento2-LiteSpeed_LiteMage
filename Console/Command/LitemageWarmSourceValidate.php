@@ -46,7 +46,7 @@ class LitemageWarmSourceValidate extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:source:validate');
         $this->setDescription('Validate LiteMage warmup URL source configuration.');
@@ -54,7 +54,7 @@ class LitemageWarmSourceValidate extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $source = (string)$input->getOption('source');
         if (!in_array($source, ['text_file', 'sitemap'], true)) {

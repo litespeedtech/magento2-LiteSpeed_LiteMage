@@ -62,7 +62,7 @@ class LitemageWarmUrl extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:url');
         $this->setDescription('Warm or debug one LiteMage URL without queue generation.');
@@ -73,7 +73,7 @@ class LitemageWarmUrl extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $mode = $input->getOption('mode') ?: $this->config->getWarmupDefaultDeltaMode();
         $profile = $this->varyProfileResolver->resolve($input->getOption('profile'));

@@ -20,7 +20,7 @@ class LitemageFlushCats extends AbstractLitemageCommand
     /**
      * {@inheritdoc}
      */
-    protected function configure()
+    protected function configure(): void
     {
 		$this->type = 'category_id';
 		$this->tag_format = '/^[\d+]+$/';

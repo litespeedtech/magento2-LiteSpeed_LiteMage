@@ -37,7 +37,7 @@ class LitemageWarmTruncate extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:truncate');
         $this->setDescription('Delete LiteMage cache warmer data.');
@@ -51,7 +51,7 @@ class LitemageWarmTruncate extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         if ($input->getOption('all-data')) {
             if ($input->getOption('failed-only')) {

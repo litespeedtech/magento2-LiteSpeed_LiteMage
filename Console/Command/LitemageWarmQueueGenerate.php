@@ -54,7 +54,7 @@ class LitemageWarmQueueGenerate extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:queue:generate');
         $this->setDescription('Build or update the LiteMage cache warmer queue.');
@@ -65,7 +65,7 @@ class LitemageWarmQueueGenerate extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $storeIds = $this->parseStoreIds((string)$input->getOption('store'));

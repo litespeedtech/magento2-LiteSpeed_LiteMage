@@ -36,7 +36,7 @@ class LitemageWarmProfileList extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:profile:list');
         $this->setDescription('List LiteMage cache warmer request profile codes.');
@@ -45,7 +45,7 @@ class LitemageWarmProfileList extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $this->varyProfileResolver->syncBusinessProfiles(

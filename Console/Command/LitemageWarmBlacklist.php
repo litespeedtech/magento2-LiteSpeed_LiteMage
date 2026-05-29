@@ -36,7 +36,7 @@ class LitemageWarmBlacklist extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:blacklist');
         $this->setDescription('Blacklist or unblacklist one LiteMage cache warmer URL.');
@@ -46,7 +46,7 @@ class LitemageWarmBlacklist extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $normalized = $this->urlNormalizer->normalize($input->getArgument('url'), $input->getOption('store'));
         $blacklisted = !$input->getOption('remove');

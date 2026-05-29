@@ -54,7 +54,7 @@ class LitemageWarmProfileDiagnose extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:profile:diagnose');
         $this->setDescription('Compare a warmup profile vary fingerprint with a sampled shopper request.');
@@ -66,7 +66,7 @@ class LitemageWarmProfileDiagnose extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $normalized = $this->urlNormalizer->normalize($input->getArgument('url'), $input->getOption('store'));

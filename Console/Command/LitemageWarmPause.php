@@ -34,14 +34,14 @@ class LitemageWarmPause extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:pause');
         $this->setDescription('Disable LiteMage cache warmer processing.');
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->configWriter->save('litemage/warmup/enabled', 0);
         $this->cacheTypeList->cleanType('config');

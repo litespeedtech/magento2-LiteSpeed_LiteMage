@@ -28,7 +28,7 @@ class LitemageWarmStatus extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:status');
         $this->setDescription('Show LiteMage cache warmer queue status counts.');
@@ -38,7 +38,7 @@ class LitemageWarmStatus extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $store = $input->getOption('store');
         $source = $input->getOption('source');

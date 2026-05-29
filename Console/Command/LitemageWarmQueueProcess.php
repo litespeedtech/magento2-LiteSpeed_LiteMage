@@ -42,7 +42,7 @@ class LitemageWarmQueueProcess extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:queue:process');
         $this->setDescription('Process due LiteMage cache warmer queued URLs.');
@@ -52,7 +52,7 @@ class LitemageWarmQueueProcess extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $limit = $input->getOption('limit');
         $filters = [];

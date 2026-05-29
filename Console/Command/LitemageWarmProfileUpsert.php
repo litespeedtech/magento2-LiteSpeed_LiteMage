@@ -29,7 +29,7 @@ class LitemageWarmProfileUpsert extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:profile:upsert');
         $this->setDescription('Create or update a LiteMage warmup vary profile.');
@@ -49,7 +49,7 @@ class LitemageWarmProfileUpsert extends Command
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $code = (string)$input->getArgument('code');

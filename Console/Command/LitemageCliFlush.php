@@ -48,7 +48,7 @@ class LitemageCliFlush extends Command
     /**
      * {@inheritdoc}
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:cli-flush');
         $this->setDescription('Sets/Gets LiteMage CLI flush status');
@@ -63,7 +63,7 @@ class LitemageCliFlush extends Command
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $action = $input->getArgument('action');
         $cur_allowed = !$this->config->isCliPurgeDisabled();

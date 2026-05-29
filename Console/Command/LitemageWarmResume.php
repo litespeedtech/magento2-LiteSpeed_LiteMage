@@ -34,14 +34,14 @@ class LitemageWarmResume extends Command
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('cache:litemage:warm:resume');
         $this->setDescription('Enable LiteMage cache warmer processing.');
         parent::configure();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->configWriter->save('litemage/warmup/enabled', 1);
         $this->cacheTypeList->cleanType('config');
