@@ -52,7 +52,7 @@ abstract class AbstractLitemageCommand extends Command
 	/**
      * {@inheritdoc}
      */
-    protected function configure()
+    protected function configure(): void
     {
 		parent::configure();
 	}
@@ -74,7 +74,7 @@ abstract class AbstractLitemageCommand extends Command
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->getInputList($input);
 		$param = ['tags' => $this->tags,

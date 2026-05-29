@@ -19,7 +19,7 @@ class LitemageFlushTags extends AbstractLitemageCommand
     /**
      * {@inheritdoc}
      */
-    protected function configure()
+    protected function configure(): void
     {
 		$this->type = 'tag';
 		$this->tag_format = '/^[a-zA-Z\d_-]+$/';
