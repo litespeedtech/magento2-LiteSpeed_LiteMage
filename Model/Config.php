@@ -340,7 +340,7 @@ class Config
         $this->load_conf_field_array(self::CFG_IGNORED_TAGS, $lm['general']);
 
         $this->_conf[self::CFG_PROD_EDIT_NO_PURGE_CATS] = $lm['purge'][self::CFG_PROD_EDIT_NO_PURGE_CATS] ?? 0;
-        $purge_prod = $lm['purge'][self::CFG_PURGE_PROD_AFTER_ORDER] ?? 1; // 0:no, 1:when out of stock, 2: always
+        $purge_prod = $lm['purge'][self::CFG_PURGE_PROD_AFTER_ORDER] ?? 2; // 0:no, 1:when out of stock, 2: always
         $purge_parent = $lm['purge'][self::CFG_PURGE_PARENT_PROD_AFTER_ORDER] ?? 0;
         if ($purge_prod && $purge_parent) {
             $purge_prod |= 4;
