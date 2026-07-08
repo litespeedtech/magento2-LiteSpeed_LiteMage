@@ -32,14 +32,9 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
     protected $storemanager;
 
     /**
-     * @var \Magento\Framework\Module\Manager
+     * @var \Litespeed\Litemage\Model\InventorySalesResolver
      */
-    protected $moduleManager;
-
-    /**
-     * @var \Magento\Framework\ObjectManagerInterface
-     */
-    protected $objectManager;
+    protected $inventorySalesResolver;
 
     /**
      * @var object|null
@@ -63,22 +58,19 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
      * @param \Magento\Store\Model\StoreManagerInterface $storemanager
      * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
      * @param \Litespeed\Litemage\Model\Config $config
-     * @param \Magento\Framework\Module\Manager $moduleManager
-     * @param \Magento\Framework\ObjectManagerInterface $objectManager
+     * @param \Litespeed\Litemage\Model\InventorySalesResolver $inventorySalesResolver
      */
     public function __construct(
         \Magento\Store\Model\StoreManagerInterface $storemanager,
         \Litespeed\Litemage\Model\CachePurge $litemagePurge,
         \Litespeed\Litemage\Model\Config $config,
-        \Magento\Framework\Module\Manager $moduleManager,
-        \Magento\Framework\ObjectManagerInterface $objectManager
+        \Litespeed\Litemage\Model\InventorySalesResolver $inventorySalesResolver
     )
     {
         $this->storemanager = $storemanager;
         $this->litemagePurge = $litemagePurge;
         $this->config = $config;
-        $this->moduleManager = $moduleManager;
-        $this->objectManager = $objectManager;
+        $this->inventorySalesResolver = $inventorySalesResolver;
         $this->inventoryApiAvailable = null;
 
         $this->enabled = $this->config->moduleEnabled();
@@ -106,8 +98,9 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
             // Magento inventory (MSI) modules are disabled/unavailable; skip the
             // out-of-stock check and always purge instead of failing order placement.
             $this->litemagePurge->debugLog(
-                'AfterOrderPlaced: "Only purge when out of stock" is configured but Magento_InventorySalesApi '
-                . 'is disabled or unavailable; falling back to always-purge for this order. Update the Purge Products after '
+                'AfterOrderPlaced: "Only purge when out of stock" is configured but Magento Inventory stock services '
+                . 'are disabled or unavailable. ' . $this->inventorySalesResolver->getUnavailableReason()
+                . ' Falling back to always-purge for this order. Update the Purge Products after '
                 . 'a Sale setting to avoid this fallback.',
                 true
             );
@@ -170,23 +163,16 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
         }
 
         $this->inventoryApiAvailable = false;
-        if (!$this->moduleManager->isEnabled('Magento_InventorySalesApi')) {
+        if (!$this->inventorySalesResolver->isAvailable()) {
+            $this->litemagePurge->debugLog(
+                'AfterOrderPlaced inventory stock services unavailable: '
+                . $this->inventorySalesResolver->getUnavailableReason()
+            );
             return false;
         }
 
-        if (!interface_exists(\Magento\InventorySalesApi\Api\GetProductSalableQtyInterface::class)
-            || !interface_exists(\Magento\InventorySalesApi\Api\StockResolverInterface::class)
-        ) {
-            return false;
-        }
-
-        try {
-            $this->salableQty = $this->objectManager->get(\Magento\InventorySalesApi\Api\GetProductSalableQtyInterface::class);
-            $this->stockresolver = $this->objectManager->get(\Magento\InventorySalesApi\Api\StockResolverInterface::class);
-        } catch (\Throwable $e) {
-            $this->litemagePurge->debugLog('AfterOrderPlaced inventory stock services unavailable: ' . $e->getMessage());
-            return false;
-        }
+        $this->salableQty = $this->inventorySalesResolver->getProductSalableQty();
+        $this->stockresolver = $this->inventorySalesResolver->getStockResolver();
 
         $this->inventoryApiAvailable = ($this->salableQty && $this->stockresolver);
         return $this->inventoryApiAvailable;

@@ -52,7 +52,7 @@
                         If only the product's stock status is displayed, select "Only purge when out of stock."
                         If no stock status is shown, then there is no need to purge the product.
                         Note: when you purge a product tag, all related pages that display the product are also purged.
-                        Note: "Only purge when out of stock" requires the Magento Inventory (MSI) module to be enabled.</comment>
+                        Note: "Only purge when out of stock" requires Magento Inventory (MSI) stock services, including Magento_InventorySalesApi and Magento_InventorySales. Installing only magento/module-inventory-sales-api is not enough.</comment>
                     <source_model>Litespeed\Litemage\Model\System\Config\Source\PurgeAfterOrder</source_model>
                     <backend_model>Litespeed\Litemage\Model\System\Config\Backend\PurgeProdAfterOrder</backend_model>
                 </field>

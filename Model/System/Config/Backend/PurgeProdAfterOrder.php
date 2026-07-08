@@ -15,9 +15,8 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Model\Context;
 use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Data\Collection\AbstractDb;
-use Magento\Framework\Module\Manager;
-use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\Registry;
+use Litespeed\Litemage\Model\InventorySalesResolver;
 
 class PurgeProdAfterOrder extends Value
 {
@@ -27,28 +26,21 @@ class PurgeProdAfterOrder extends Value
     private const ONLY_OUTOFSTOCK = 1;
 
     /**
-     * @var Manager
+     * @var InventorySalesResolver
      */
-    private $moduleManager;
-
-    /**
-     * @var ObjectManagerInterface
-     */
-    private $objectManager;
+    private $inventorySalesResolver;
 
     public function __construct(
         Context $context,
         Registry $registry,
         ScopeConfigInterface $config,
         TypeListInterface $cacheTypeList,
-        Manager $moduleManager,
-        ObjectManagerInterface $objectManager,
+        InventorySalesResolver $inventorySalesResolver,
         ?AbstractResource $resource = null,
         ?AbstractDb $resourceCollection = null,
         array $data = []
     ) {
-        $this->moduleManager = $moduleManager;
-        $this->objectManager = $objectManager;
+        $this->inventorySalesResolver = $inventorySalesResolver;
         parent::__construct($context, $registry, $config, $cacheTypeList, $resource, $resourceCollection, $data);
     }
 
@@ -59,34 +51,15 @@ class PurgeProdAfterOrder extends Value
     public function beforeSave()
     {
         $value = (int) $this->getValue();
-        if (($value & self::ONLY_OUTOFSTOCK) && !$this->inventorySalesAvailable()) {
+        if (($value & self::ONLY_OUTOFSTOCK) && !$this->inventorySalesResolver->isAvailable()) {
             throw new LocalizedException(
-                __('"Only purge the product when out of stock" requires Magento Inventory (MSI) stock services, which are disabled or unavailable on this store. Choose "Always purge the product" or "No" instead, or enable Magento Inventory.')
+                __(
+                    '"Only purge the product when out of stock" requires Magento Inventory (MSI) stock services. %1 Choose "Always purge the product" or "No" instead, or enable the required Magento Inventory modules.',
+                    $this->inventorySalesResolver->getUnavailableReason()
+                )
             );
         }
 
         return parent::beforeSave();
-    }
-
-    private function inventorySalesAvailable()
-    {
-        if (!$this->moduleManager->isEnabled('Magento_InventorySalesApi')) {
-            return false;
-        }
-
-        if (!interface_exists(\Magento\InventorySalesApi\Api\GetProductSalableQtyInterface::class)
-            || !interface_exists(\Magento\InventorySalesApi\Api\StockResolverInterface::class)
-        ) {
-            return false;
-        }
-
-        try {
-            $this->objectManager->get(\Magento\InventorySalesApi\Api\GetProductSalableQtyInterface::class);
-            $this->objectManager->get(\Magento\InventorySalesApi\Api\StockResolverInterface::class);
-        } catch (\Throwable $e) {
-            return false;
-        }
-
-        return true;
     }
 }

@@ -5,8 +5,10 @@
         "php": ">=7.4.0",
         "ext-curl": "*",
         "magento/module-page-cache": "*",
-        "magento/module-inventory-sales-api": "*",
         "magento/framework": "*"
+    },
+    "suggest": {
+        "magento/module-inventory-sales": "Required only for the \"Only purge the product when out of stock\" option."
     },
     "type": "magento2-module",
     "version": "2.2.7",
