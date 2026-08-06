@@ -11,6 +11,10 @@ namespace Litespeed\Litemage\Observer;
 
 class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
 {
+    /**
+     * InventorySalesApi SalesChannelInterface::TYPE_WEBSITE value.
+     */
+    private const SALES_CHANNEL_TYPE_WEBSITE = 'website';
 
     /**
      * @var \Litespeed\Litemage\Model\Config
@@ -28,38 +32,46 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
     protected $storemanager;
 
     /**
-     * @var \Magento\InventorySalesApi\Api\GetProductSalableQtyInterface
+     * @var \Litespeed\Litemage\Model\InventorySalesResolver
+     */
+    protected $inventorySalesResolver;
+
+    /**
+     * @var object|null
      */
     protected $salableQty;
 
     /**
-     * @var \Magento\InventorySalesApi\Api\StockResolverInterface
+     * @var object|null
      */
     protected $stockresolver;
 
     private $enabled;
 
+    /**
+     * @var bool|null
+     */
+    private $inventoryApiAvailable;
+
 
     /**
      * @param \Magento\Store\Model\StoreManagerInterface $storemanager
-     * @param \Magento\InventorySalesApi\Api\GetProductSalableQtyInterface $salableQty
-     * @param \Magento\InventorySalesApi\Api\StockResolverInterface $stockResolver
      * @param \Litespeed\Litemage\Model\CachePurge $litemagePurge
      * @param \Litespeed\Litemage\Model\Config $config
+     * @param \Litespeed\Litemage\Model\InventorySalesResolver $inventorySalesResolver
      */
     public function __construct(
         \Magento\Store\Model\StoreManagerInterface $storemanager,
-        \Magento\InventorySalesApi\Api\GetProductSalableQtyInterface $salableQty,
-        \Magento\InventorySalesApi\Api\StockResolverInterface $stockResolver,
         \Litespeed\Litemage\Model\CachePurge $litemagePurge,
-        \Litespeed\Litemage\Model\Config $config
+        \Litespeed\Litemage\Model\Config $config,
+        \Litespeed\Litemage\Model\InventorySalesResolver $inventorySalesResolver
     )
     {
         $this->storemanager = $storemanager;
-        $this->salableQty = $salableQty;
-        $this->stockresolver = $stockResolver;
         $this->litemagePurge = $litemagePurge;
         $this->config = $config;
+        $this->inventorySalesResolver = $inventorySalesResolver;
+        $this->inventoryApiAvailable = null;
 
         $this->enabled = $this->config->moduleEnabled();
         if ($this->enabled) {
@@ -82,11 +94,33 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
         $include_parent = (($this->enabled & 4) == 4);
         $has_parent = false;
 
+        if ($only_outofstock && !$this->initInventoryApi()) {
+            // Magento inventory (MSI) modules are disabled/unavailable; skip the
+            // out-of-stock check and always purge instead of failing order placement.
+            $this->litemagePurge->debugLog(
+                'AfterOrderPlaced: "Only purge when out of stock" is configured but Magento Inventory stock services '
+                . 'are disabled or unavailable. ' . $this->inventorySalesResolver->getUnavailableReason()
+                . ' Falling back to always-purge for this order. Update the Purge Products after '
+                . 'a Sale setting to avoid this fallback.',
+                true
+            );
+            $only_outofstock = false;
+        }
+
         if ($only_outofstock) {
-            $websiteCode = $order->getStore()->getWebsite()->getCode();
-            $stockDetails = $this->stockresolver->execute(\Magento\InventorySalesApi\Api\Data\SalesChannelInterface::TYPE_WEBSITE, $websiteCode);
-            $stockId = $stockDetails->getStockId();
-            $isPaypalExpress = ($order->getPayment()->getMethod() == 'paypal_express');
+            try {
+                $websiteCode = $order->getStore()->getWebsite()->getCode();
+                $stockDetails = $this->stockresolver->execute(self::SALES_CHANNEL_TYPE_WEBSITE, $websiteCode);
+                $stockId = $stockDetails->getStockId();
+                $isPaypalExpress = ($order->getPayment()->getMethod() == 'paypal_express');
+            } catch (\Throwable $e) {
+                $this->litemagePurge->debugLog(
+                    'AfterOrderPlaced stock resolver failed: ' . $e->getMessage()
+                    . '; falling back to always-purge for this order.',
+                    true
+                );
+                $only_outofstock = false;
+            }
         }
 
         foreach ($items as $item) {
@@ -120,6 +154,28 @@ class AfterOrderPlaced implements \Magento\Framework\Event\ObserverInterface
             }
             $this->litemagePurge->purgeProductIds(array_unique($pids), $reason);
         }
+    }
+
+    private function initInventoryApi()
+    {
+        if ($this->inventoryApiAvailable !== null) {
+            return $this->inventoryApiAvailable;
+        }
+
+        $this->inventoryApiAvailable = false;
+        if (!$this->inventorySalesResolver->isAvailable()) {
+            $this->litemagePurge->debugLog(
+                'AfterOrderPlaced inventory stock services unavailable: '
+                . $this->inventorySalesResolver->getUnavailableReason()
+            );
+            return false;
+        }
+
+        $this->salableQty = $this->inventorySalesResolver->getProductSalableQty();
+        $this->stockresolver = $this->inventorySalesResolver->getStockResolver();
+
+        $this->inventoryApiAvailable = ($this->salableQty && $this->stockresolver);
+        return $this->inventoryApiAvailable;
     }
 
     private function isStillSalableAfterOrder($item, $stockId, $isPaypalExpress)
